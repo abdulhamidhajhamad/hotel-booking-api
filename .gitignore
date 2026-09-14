@@ -1,0 +1,40 @@
+# .NET build output
+bin/
+obj/
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# User-specific files
+*.user
+*.suo
+
+# Test results
+TestResults/
+*.trx
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Logs
+*.log
+logs/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Local app settings
+appsettings.Local.json
+appsettings.*.Local.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+.coverage

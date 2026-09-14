@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/HotelBooking.Application/HotelBooking.Application.csproj" />
+    <Project Path="src/HotelBooking.Domain/HotelBooking.Domain.csproj" />
+    <Project Path="src/HotelBooking.Infrastructure/HotelBooking.Infrastructure.csproj" />
+    <Project Path="src/HotelBooking.Presentation/HotelBooking.Presentation.csproj" />
+  </Folder>
+</Solution>
