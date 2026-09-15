@@ -1,0 +1,27 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using HotelBooking.Domain.Entities;
+
+namespace HotelBooking.Application.Abstractions;
+
+public interface IApplicationDbContext
+{
+    DbSet<City> Cities { get; }
+    DbSet<Hotel> Hotels { get; }
+    DbSet<HotelImage> HotelImages { get; }
+    DbSet<Amenity> Amenities { get; }
+    DbSet<HotelAmenity> HotelAmenities { get; }
+    DbSet<Room> Rooms { get; }
+    DbSet<RoomType> RoomTypes { get; }
+    DbSet<RoomImage> RoomImages { get; }
+    DbSet<RoomAvailability> RoomAvailability { get; }
+    DbSet<BookingGroup> BookingGroups { get; }
+    DbSet<Booking> Bookings { get; }
+    DbSet<Payment> Payments { get; }
+    DbSet<HotelVisit> HotelVisits { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
+
+    DatabaseFacade Database { get; }
+
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+}
