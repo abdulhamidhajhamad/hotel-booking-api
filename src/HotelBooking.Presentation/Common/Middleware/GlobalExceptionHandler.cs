@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using HotelBooking.Application.Behaviors;
 using HotelBooking.Presentation.Common.Logging;
 
 namespace HotelBooking.Presentation.Common.Middleware;
@@ -31,12 +30,11 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         var correlationId = httpContext.Items[CorrelationIdEnricher.HttpContextItemsKey] as string ?? string.Empty;
         var requestPath = httpContext.Request.Path.Value ?? string.Empty;
         var requestMethod = httpContext.Request.Method;
-        var requestName = exception.Data[LoggingBehavior<object, object>.RequestNameExceptionKey] as string ?? "(none)";
 
         _logger.LogError(
             exception,
-            "Unhandled exception on {RequestMethod} {RequestPath} (correlation {CorrelationId}, request {RequestName})",
-            requestMethod, requestPath, correlationId, requestName);
+            "Unhandled exception on {RequestMethod} {RequestPath} (correlation {CorrelationId})",
+            requestMethod, requestPath, correlationId);
 
         var problem = new ProblemDetails
         {
