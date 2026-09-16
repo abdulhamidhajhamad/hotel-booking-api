@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Domain.Identity;
+using HotelBooking.Infrastructure.Identity;
 using HotelBooking.Infrastructure.Persistence;
 
 namespace HotelBooking.Infrastructure;
@@ -43,6 +44,9 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders()
             .AddSignInManager();
+
+        services.AddScoped<IUserRegistrar, UserRegistrar>();
+
 
         services.AddSingleton(TimeProvider.System);
 
