@@ -1,10 +1,17 @@
+﻿using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Domain.Identity;
 using HotelBooking.Infrastructure.Identity;
+using HotelBooking.Infrastructure.Identity.Options;
 using HotelBooking.Infrastructure.Persistence;
+
+using HotelBooking.Application.Features.Auth.Abstractions;
 
 namespace HotelBooking.Infrastructure;
 
@@ -12,7 +19,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        string connectionString)
+        string connectionString,
+        JwtOptions jwtOptions,
+        string redisConnection)
     {
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString, sql =>
@@ -45,10 +54,57 @@ public static class DependencyInjection
             .AddDefaultTokenProviders()
             .AddSignInManager();
 
-        services.AddScoped<IUserRegistrar, UserRegistrar>();
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(jwtOptions));
 
+        services.AddScoped<IUserRegistrar, UserRegistrar>();
+        services.AddScoped<IUserAuthenticator, UserAuthenticator>();
+        services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IRefreshTokenIssuer, RefreshTokenIssuer>();
+        services.AddScoped<IRefreshTokenRotator, RefreshTokenRotator>();
+        services.AddScoped<IRefreshTokenRevoker, RefreshTokenRevoker>();
+
+        services.AddSingleton<IConnectionMultiplexer>(_ =>
+            ConnectionMultiplexer.Connect(redisConnection));
+        services.AddScoped<IJtiBlacklist, RedisJtiBlacklist>();
 
         services.AddSingleton(TimeProvider.System);
+
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey));
+
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtOptions.Issuer,
+                    ValidAudience = jwtOptions.Audience,
+                    IssuerSigningKey = signingKey,
+                    ClockSkew = TimeSpan.Zero,
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var jti = context.Principal?.FindFirst(
+                            System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+                        if (string.IsNullOrEmpty(jti)) return;
+
+                        var blacklist = context.HttpContext.RequestServices
+                            .GetRequiredService<IJtiBlacklist>();
+
+                        if (await blacklist.IsBlacklistedAsync(jti, context.HttpContext.RequestAborted))
+                            context.Fail("Token has been revoked.");
+                    }
+                };
+            });
+
+        services.AddAuthorization();
 
         return services;
     }

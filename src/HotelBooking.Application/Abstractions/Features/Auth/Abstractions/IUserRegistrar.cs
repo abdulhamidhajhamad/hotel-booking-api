@@ -1,6 +1,6 @@
 using HotelBooking.Application.Common.Results;
 
-namespace HotelBooking.Application.Abstractions;
+namespace HotelBooking.Application.Features.Auth.Abstractions;
 
 public interface IUserRegistrar
 {
