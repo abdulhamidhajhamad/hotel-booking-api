@@ -15,25 +15,9 @@ namespace HotelBooking.Presentation.Controllers;
 [Route("api/v1/auth")]
 public sealed class AuthController : ControllerBase
 {
-    private readonly ICommandHandler<RegisterCommand, RegisterResponse> _registerHandler;
-    private readonly ICommandHandler<LoginCommand, LoginResponse> _loginHandler;
-    private readonly ICommandHandler<RefreshCommand, RefreshResponse> _refreshHandler;
-    private readonly ICommandHandler<LogoutCommand> _logoutHandler;
-    private readonly ICommandHandler<LogoutAllCommand> _logoutAllHandler;
+    private readonly IDispatcher _dispatcher;
 
-    public AuthController(
-        ICommandHandler<RegisterCommand, RegisterResponse> registerHandler,
-        ICommandHandler<LoginCommand, LoginResponse> loginHandler,
-        ICommandHandler<RefreshCommand, RefreshResponse> refreshHandler,
-        ICommandHandler<LogoutCommand> logoutHandler,
-        ICommandHandler<LogoutAllCommand> logoutAllHandler)
-    {
-        _registerHandler = registerHandler;
-        _loginHandler = loginHandler;
-        _refreshHandler = refreshHandler;
-        _logoutHandler = logoutHandler;
-        _logoutAllHandler = logoutAllHandler;
-    }
+    public AuthController(IDispatcher dispatcher) => _dispatcher = dispatcher;
 
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status200OK)]
@@ -43,7 +27,7 @@ public sealed class AuthController : ControllerBase
         [FromBody] RegisterCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _registerHandler.Handle(command, cancellationToken);
+        var result = await _dispatcher.Send(command, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -55,7 +39,7 @@ public sealed class AuthController : ControllerBase
         [FromBody] LoginCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _loginHandler.Handle(command, cancellationToken);
+        var result = await _dispatcher.Send(command, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -67,7 +51,7 @@ public sealed class AuthController : ControllerBase
         [FromBody] RefreshCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _refreshHandler.Handle(command, cancellationToken);
+        var result = await _dispatcher.Send(command, cancellationToken);
         return result.ToActionResult();
     }
 
@@ -77,7 +61,7 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
-        var result = await _logoutHandler.Handle(new LogoutCommand(), cancellationToken);
+        var result = await _dispatcher.Send(new LogoutCommand(), cancellationToken);
         return result.ToActionResult();
     }
 
@@ -87,7 +71,7 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> LogoutAll(CancellationToken cancellationToken)
     {
-        var result = await _logoutAllHandler.Handle(new LogoutAllCommand(), cancellationToken);
+        var result = await _dispatcher.Send(new LogoutAllCommand(), cancellationToken);
         return result.ToActionResult();
     }
 }
