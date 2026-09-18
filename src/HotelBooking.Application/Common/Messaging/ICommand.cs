@@ -1,4 +1,5 @@
 namespace HotelBooking.Application.Common.Messaging;
 
-public interface ICommand;
-public interface ICommand<TResponse>;
+public interface ICommandBase;
+public interface ICommand : ICommandBase;
+public interface ICommand<TResponse> : ICommandBase;

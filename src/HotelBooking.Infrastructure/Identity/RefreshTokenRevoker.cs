@@ -1,9 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using HotelBooking.Application.Abstractions;
-using HotelBooking.Infrastructure.Identity.Options;
-
 using HotelBooking.Application.Features.Auth.Abstractions;
+using HotelBooking.Infrastructure.Identity.Options;
 
 namespace HotelBooking.Infrastructure.Identity;
 
@@ -35,7 +34,6 @@ public sealed class RefreshTokenRevoker : IRefreshTokenRevoker
 
         token.IsRevoked = true;
         token.RevokedAt = now;
-        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<RevokedRefreshToken>> RevokeAllAsync(
@@ -56,7 +54,6 @@ public sealed class RefreshTokenRevoker : IRefreshTokenRevoker
             if (accessExp > now)
                 result.Add(new RevokedRefreshToken(t.Jti, accessExp));
         }
-        await _dbContext.SaveChangesAsync(cancellationToken);
         return result;
     }
 }

@@ -25,6 +25,7 @@ public static class DependencyInjection
                 .WithScopedLifetime());
 
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
 
         services.AddScoped<IDispatcher, Dispatcher>();
 
