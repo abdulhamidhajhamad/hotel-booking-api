@@ -20,7 +20,7 @@ public interface IApplicationDbContext
     DbSet<Payment> Payments { get; }
     DbSet<HotelVisit> HotelVisits { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
-
+    DbSet<Domain.Identity.ApplicationUser> Users { get; }
     DatabaseFacade Database { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
