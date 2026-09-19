@@ -31,8 +31,6 @@ public class CurrentUser : ICurrentUser
 
     public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
 
-    public IReadOnlyList<string> Permissions =>
-        User?.FindAll("permission").Select(c => c.Value).ToArray() ?? Array.Empty<string>();
 
     public string? Jti => User?.FindFirstValue(JwtRegisteredClaimNames.Jti);
 

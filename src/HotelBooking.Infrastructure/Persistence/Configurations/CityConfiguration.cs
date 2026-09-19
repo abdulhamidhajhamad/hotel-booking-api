@@ -12,7 +12,8 @@ public class CityConfiguration : IEntityTypeConfiguration<City>
         builder.Property(c => c.Country).IsRequired().HasMaxLength(2).IsFixedLength();
         builder.Property(c => c.PostalCode).HasMaxLength(20);
         builder.Property(c => c.Timezone).IsRequired().HasMaxLength(64);
-
-        builder.HasIndex(c => new { c.Name, c.Country }).IsUnique();
+        builder.HasIndex(c => new { c.Name, c.Country })
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
     }
 }

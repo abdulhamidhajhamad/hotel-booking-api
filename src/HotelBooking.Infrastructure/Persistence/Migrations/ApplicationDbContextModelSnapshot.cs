@@ -257,7 +257,8 @@ namespace HotelBooking.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Name", "Country")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("Cities");
                 });
