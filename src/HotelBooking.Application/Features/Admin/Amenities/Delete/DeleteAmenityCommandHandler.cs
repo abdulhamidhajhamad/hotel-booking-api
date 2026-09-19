@@ -22,15 +22,7 @@ public sealed class DeleteAmenityCommandHandler : ICommandHandler<DeleteAmenityC
         if (amenity is null)
             return Result.Failure(AmenityErrors.NotFound(command.Id));
 
-        var links = await _db.HotelAmenities
-            .Where(l => l.AmenityId == command.Id)
-            .ToListAsync(cancellationToken);
-
-        if (links.Count > 0)
-            _db.HotelAmenities.RemoveRange(links);
-
-        amenity.IsDeleted = true;
-        amenity.DeletedAt = DateTimeOffset.UtcNow;
+        _db.Amenities.Remove(amenity);
 
         return Result.Success();
     }

@@ -36,7 +36,6 @@ public class ApplicationDbContext
         builder.Entity<Hotel>().HasQueryFilter(h => !h.IsDeleted);
         builder.Entity<Room>().HasQueryFilter(r => !r.IsDeleted);
         builder.Entity<RoomType>().HasQueryFilter(t => !t.IsDeleted);
-        builder.Entity<Amenity>().HasQueryFilter(a => !a.IsDeleted);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
