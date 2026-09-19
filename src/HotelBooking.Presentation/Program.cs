@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Core;
-
+using HotelBooking.Infrastructure.Storage.Options;
 DotNetEnv.Env.TraversePath().Load();
 
 Log.Logger = new LoggerConfiguration()
@@ -40,8 +40,7 @@ try
     };
 
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(connectionString, jwtOptions, redisConnection);
-
+builder.Services.AddInfrastructure(connectionString, jwtOptions, redisConnection, cloudinaryOptions);
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
@@ -109,6 +108,17 @@ try
             options.RoutePrefix = "swagger";
         });
     }
+var cloudinaryOptions = new CloudinaryOptions
+{
+    CloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME")
+        ?? throw new InvalidOperationException("CLOUDINARY_CLOUD_NAME missing - check your .env."),
+    ApiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY")
+        ?? throw new InvalidOperationException("CLOUDINARY_API_KEY missing - check your .env."),
+    ApiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET")
+        ?? throw new InvalidOperationException("CLOUDINARY_API_SECRET missing - check your .env."),
+    DefaultFolder = Environment.GetEnvironmentVariable("CLOUDINARY_FOLDER") ?? "hotel-booking",
+};
+
 
     app.UseAuthentication();
     app.UseAuthorization();

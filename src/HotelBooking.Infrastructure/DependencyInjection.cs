@@ -6,12 +6,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 using HotelBooking.Application.Abstractions;
+using HotelBooking.Application.Abstractions.Storage;
+using HotelBooking.Application.Features.Auth.Abstractions;
 using HotelBooking.Domain.Identity;
 using HotelBooking.Infrastructure.Identity;
 using HotelBooking.Infrastructure.Identity.Options;
 using HotelBooking.Infrastructure.Persistence;
-
-using HotelBooking.Application.Features.Auth.Abstractions;
+using HotelBooking.Infrastructure.Storage;
+using HotelBooking.Infrastructure.Storage.Options;
 
 namespace HotelBooking.Infrastructure;
 
@@ -21,7 +23,8 @@ public static class DependencyInjection
         this IServiceCollection services,
         string connectionString,
         JwtOptions jwtOptions,
-        string redisConnection)
+        string redisConnection,
+        CloudinaryOptions cloudinaryOptions)
     {
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString, sql =>
@@ -105,6 +108,9 @@ public static class DependencyInjection
             });
 
         services.AddAuthorization();
+
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(cloudinaryOptions));
+        services.AddScoped<IImageStorage, CloudinaryImageStorage>();
 
         return services;
     }
