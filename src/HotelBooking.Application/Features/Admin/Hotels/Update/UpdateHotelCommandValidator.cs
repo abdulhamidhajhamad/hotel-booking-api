@@ -18,7 +18,7 @@ public sealed class UpdateHotelCommandValidator : AbstractValidator<UpdateHotelC
                 x.Latitude.HasValue ||
                 x.Longitude.HasValue ||
                 x.CityId.HasValue ||
-                x.OwnerId.HasValue)
+                x.OwnerName is not null)
             .WithMessage("At least one field must be provided.");
 
         When(x => x.Name is not null, () =>
@@ -45,7 +45,7 @@ public sealed class UpdateHotelCommandValidator : AbstractValidator<UpdateHotelC
         When(x => x.CityId.HasValue, () =>
             RuleFor(x => x.CityId!.Value).NotEmpty());
 
-        When(x => x.OwnerId.HasValue, () =>
-            RuleFor(x => x.OwnerId!.Value).NotEmpty());
+        When(x => x.OwnerName is not null, () =>
+            RuleFor(x => x.OwnerName!).MaximumLength(200));
     }
 }

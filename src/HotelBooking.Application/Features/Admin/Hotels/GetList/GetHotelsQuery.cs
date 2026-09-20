@@ -10,7 +10,6 @@ public sealed record GetHotelsQuery(
     Guid? CityId = null,
     int? MinStar = null,
     HotelCategory? Category = null,
-    Guid? OwnerId = null,
     string? SortBy = null,
     bool SortDesc = false,
     int Page = 1,

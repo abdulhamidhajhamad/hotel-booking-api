@@ -3,7 +3,6 @@ using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
 using HotelBooking.Application.Features.Admin.Hotels.Common;
 using HotelBooking.Domain.Entities;
-using HotelBooking.Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.Hotels.Create;
@@ -26,17 +25,6 @@ public sealed class CreateHotelCommandHandler
         if (city is null)
             return HotelErrors.CityNotFound(command.CityId);
 
-        ApplicationUser? owner = null;
-        if (command.OwnerId.HasValue)
-        {
-            owner = await _db.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == command.OwnerId.Value, cancellationToken);
-
-            if (owner is null)
-                return HotelErrors.OwnerNotFound(command.OwnerId.Value);
-        }
-
         var hotel = new Hotel
         {
             Name = command.Name.Trim(),
@@ -47,7 +35,7 @@ public sealed class CreateHotelCommandHandler
             Latitude = command.Latitude,
             Longitude = command.Longitude,
             CityId = command.CityId,
-            OwnerId = command.OwnerId,
+            OwnerName = string.IsNullOrWhiteSpace(command.OwnerName) ? null : command.OwnerName!.Trim(),
         };
 
         await _db.Hotels.AddAsync(hotel, cancellationToken);
@@ -64,9 +52,7 @@ public sealed class CreateHotelCommandHandler
             city.Id,
             city.Name,
             city.Country,
-            owner?.Id,
-            owner?.Email,
-            owner?.FullName,
+            hotel.OwnerName,
             NumberOfRooms: 0,
             PrimaryImageUrl: null,
             hotel.CreatedAt,

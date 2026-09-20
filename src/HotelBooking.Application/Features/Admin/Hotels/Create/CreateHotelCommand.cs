@@ -13,4 +13,4 @@ public sealed record CreateHotelCommand(
     double? Latitude,
     double? Longitude,
     Guid CityId,
-    Guid? OwnerId) : ICommand<HotelDetail>;
+    string? OwnerName) : ICommand<HotelDetail>;

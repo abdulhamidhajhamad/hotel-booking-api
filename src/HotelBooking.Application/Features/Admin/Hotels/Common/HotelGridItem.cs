@@ -8,7 +8,7 @@ public sealed record HotelGridItem(
     int StarRating,
     HotelCategory Category,
     string CityName,
-    string? OwnerFullName,
+    string? OwnerName,
     int NumberOfRooms,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt);

@@ -14,4 +14,4 @@ public sealed record UpdateHotelCommand(
     double? Latitude = null,
     double? Longitude = null,
     Guid? CityId = null,
-    Guid? OwnerId = null) : ICommand<HotelDetail>;
+    string? OwnerName = null) : ICommand<HotelDetail>;

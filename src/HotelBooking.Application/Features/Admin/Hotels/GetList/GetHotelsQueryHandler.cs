@@ -35,9 +35,6 @@ public sealed class GetHotelsQueryHandler
         if (query.Category.HasValue)
             source = source.Where(h => h.Category == query.Category.Value);
 
-        if (query.OwnerId.HasValue)
-            source = source.Where(h => h.OwnerId == query.OwnerId.Value);
-
         var totalCount = await source.CountAsync(cancellationToken);
 
         source = (query.SortBy?.ToLowerInvariant()) switch
@@ -56,7 +53,7 @@ public sealed class GetHotelsQueryHandler
                 h.StarRating,
                 h.Category,
                 h.City.Name,
-                h.Owner != null ? h.Owner.FullName : null,
+                h.OwnerName,
                 h.Rooms.Count(r => !r.IsDeleted),
                 h.CreatedAt,
                 h.UpdatedAt))

@@ -10,9 +10,6 @@ public static class HotelErrors
     public static Error CityNotFound(Guid cityId) =>
         Error.Validation("Hotel.CityNotFound", $"City with id '{cityId}' was not found.");
 
-    public static Error OwnerNotFound(Guid ownerId) =>
-        Error.Validation("Hotel.OwnerNotFound", $"Owner with id '{ownerId}' was not found.");
-
     public static Error HasActiveBookings(Guid id) =>
         Error.Conflict("Hotel.HasActiveBookings",
             $"Hotel '{id}' cannot be deleted because it has active bookings.");

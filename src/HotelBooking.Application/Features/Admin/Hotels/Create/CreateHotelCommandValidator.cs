@@ -14,5 +14,6 @@ public sealed class CreateHotelCommandValidator : AbstractValidator<CreateHotelC
         RuleFor(x => x.Latitude).InclusiveBetween(-90, 90).When(x => x.Latitude.HasValue);
         RuleFor(x => x.Longitude).InclusiveBetween(-180, 180).When(x => x.Longitude.HasValue);
         RuleFor(x => x.CityId).NotEmpty();
+        RuleFor(x => x.OwnerName!).MaximumLength(200).When(x => x.OwnerName is not null);
     }
 }
