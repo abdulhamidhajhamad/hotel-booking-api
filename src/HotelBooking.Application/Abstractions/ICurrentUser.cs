@@ -6,4 +6,6 @@ public interface ICurrentUser
     string? Email { get; }
     bool IsAuthenticated { get; }
     IReadOnlyList<string> Permissions { get; }
+    string? Jti { get; }
+    DateTimeOffset? AccessTokenExpiresAt { get; }
 }

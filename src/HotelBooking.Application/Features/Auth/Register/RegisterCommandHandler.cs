@@ -1,7 +1,9 @@
-using FluentValidation;
+﻿using FluentValidation;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+
+using HotelBooking.Application.Features.Auth.Abstractions;
 
 namespace HotelBooking.Application.Features.Auth.Register;
 
