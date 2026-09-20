@@ -19,6 +19,7 @@ public interface IApplicationDbContext
     DbSet<Booking> Bookings { get; }
     DbSet<Payment> Payments { get; }
     DbSet<HotelVisit> HotelVisits { get; }
+    DbSet<Discount> Discounts { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<Domain.Identity.ApplicationUser> Users { get; }
     DatabaseFacade Database { get; }

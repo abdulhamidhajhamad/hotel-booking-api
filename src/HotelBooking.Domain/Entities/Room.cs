@@ -22,4 +22,5 @@ public class Room : BaseEntity
     public ICollection<RoomImage> Images { get; set; } = new List<RoomImage>();
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     public ICollection<RoomAvailability> Availability { get; set; } = new List<RoomAvailability>();
+    public ICollection<Discount> Discounts { get; set; } = new List<Discount>();
 }
