@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Application.Common.Errors;
 using HotelBooking.Application.Common.Results;
-using HotelBooking.Domain.Entities;
-using HotelBooking.Domain.Identity;
-
 using HotelBooking.Application.Features.Auth.Abstractions;
+using HotelBooking.Domain.Identity;
 
 namespace HotelBooking.Infrastructure.Identity;
 
@@ -17,19 +16,22 @@ public sealed class RefreshTokenRotator : IRefreshTokenRotator
     private readonly IJwtTokenGenerator _tokenGenerator;
     private readonly IRefreshTokenIssuer _issuer;
     private readonly TimeProvider _timeProvider;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public RefreshTokenRotator(
         IApplicationDbContext dbContext,
         UserManager<ApplicationUser> userManager,
         IJwtTokenGenerator tokenGenerator,
         IRefreshTokenIssuer issuer,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IServiceScopeFactory scopeFactory)
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _tokenGenerator = tokenGenerator;
         _issuer = issuer;
         _timeProvider = timeProvider;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<Result<RotatedTokens>> RotateAsync(
@@ -47,8 +49,7 @@ public sealed class RefreshTokenRotator : IRefreshTokenRotator
 
         if (existing.IsRevoked)
         {
-            await RevokeAllForUserAsync(existing.UserId, now, cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await NukeUserSessionsAsync(existing.UserId, now, cancellationToken);
             return Result<RotatedTokens>.Failure(AuthErrors.RefreshTokenReused());
         }
 
@@ -66,20 +67,25 @@ public sealed class RefreshTokenRotator : IRefreshTokenRotator
         existing.IsRevoked = true;
         existing.RevokedAt = now;
         existing.ReplacedByTokenHash = RefreshTokenIssuer.HashToken(newRefresh.RawToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new RotatedTokens(jwt.AccessToken, newRefresh.RawToken, jwt.ExpiresAt);
     }
 
-    private async Task RevokeAllForUserAsync(Guid userId, DateTimeOffset now, CancellationToken ct)
+    private async Task NukeUserSessionsAsync(Guid userId, DateTimeOffset now, CancellationToken ct)
     {
-        var active = await _dbContext.RefreshTokens
+        using var scope = _scopeFactory.CreateScope();
+        var freshContext = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+
+        var active = await freshContext.RefreshTokens
             .Where(t => t.UserId == userId && !t.IsRevoked)
             .ToListAsync(ct);
+
         foreach (var t in active)
         {
             t.IsRevoked = true;
             t.RevokedAt = now;
         }
+
+        await freshContext.SaveChangesAsync(ct);
     }
 }

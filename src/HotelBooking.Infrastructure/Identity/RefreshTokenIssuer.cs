@@ -1,10 +1,9 @@
 ﻿using System.Security.Cryptography;
 using Microsoft.Extensions.Options;
 using HotelBooking.Application.Abstractions;
+using HotelBooking.Application.Features.Auth.Abstractions;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Identity.Options;
-
-using HotelBooking.Application.Features.Auth.Abstractions;
 
 namespace HotelBooking.Infrastructure.Identity;
 
@@ -24,7 +23,7 @@ public sealed class RefreshTokenIssuer : IRefreshTokenIssuer
         _timeProvider = timeProvider;
     }
 
-    public async Task<RefreshTokenIssued> IssueAsync(
+    public Task<RefreshTokenIssued> IssueAsync(
         Guid userId,
         string jti,
         CancellationToken cancellationToken = default)
@@ -46,9 +45,8 @@ public sealed class RefreshTokenIssuer : IRefreshTokenIssuer
         };
 
         _dbContext.RefreshTokens.Add(refresh);
-        await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new RefreshTokenIssued(raw, expiresAt);
+        return Task.FromResult(new RefreshTokenIssued(raw, expiresAt));
     }
 
     internal static string GenerateRawToken()

@@ -1,10 +1,8 @@
-﻿using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Errors;
+﻿using HotelBooking.Application.Common.Errors;
 using HotelBooking.Application.Common.Results;
 using HotelBooking.Application.Features.Auth.Abstractions;
 using HotelBooking.Domain.Identity;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Infrastructure.Identity;
 
@@ -13,14 +11,10 @@ public sealed class UserRegistrar : IUserRegistrar
     private const string DefaultRole = "User";
 
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IApplicationDbContext _dbContext;
 
-    public UserRegistrar(
-        UserManager<ApplicationUser> userManager,
-        IApplicationDbContext dbContext)
+    public UserRegistrar(UserManager<ApplicationUser> userManager)
     {
         _userManager = userManager;
-        _dbContext = dbContext;
     }
 
     public async Task<Result<Guid>> RegisterAsync(
@@ -39,31 +33,20 @@ public sealed class UserRegistrar : IUserRegistrar
             Email = email,
         };
 
-        var strategy = _dbContext.Database.CreateExecutionStrategy();
-
-        return await strategy.ExecuteAsync<Result<Guid>>(async () =>
+        var createResult = await _userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
         {
-            await using var transaction = await _dbContext.Database
-                .BeginTransactionAsync(cancellationToken);
+            var reason = string.Join("; ", createResult.Errors.Select(e => e.Description));
+            return Result<Guid>.Failure(AuthErrors.RegistrationFailed(reason));
+        }
 
-            var createResult = await _userManager.CreateAsync(user, password);
-            if (!createResult.Succeeded)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                var reason = string.Join("; ", createResult.Errors.Select(e => e.Description));
-                return Result<Guid>.Failure(AuthErrors.RegistrationFailed(reason));
-            }
+        var roleResult = await _userManager.AddToRoleAsync(user, DefaultRole);
+        if (!roleResult.Succeeded)
+        {
+            var reason = string.Join("; ", roleResult.Errors.Select(e => e.Description));
+            return Result<Guid>.Failure(AuthErrors.RegistrationFailed(reason));
+        }
 
-            var roleResult = await _userManager.AddToRoleAsync(user, DefaultRole);
-            if (!roleResult.Succeeded)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                var reason = string.Join("; ", roleResult.Errors.Select(e => e.Description));
-                return Result<Guid>.Failure(AuthErrors.RegistrationFailed(reason));
-            }
-
-            await transaction.CommitAsync(cancellationToken);
-            return Result<Guid>.Success(user.Id);
-        });
+        return Result<Guid>.Success(user.Id);
     }
 }

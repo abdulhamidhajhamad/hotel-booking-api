@@ -1,11 +1,6 @@
 using FluentValidation;
-using Microsoft.Extensions.DependencyInjection;
 using HotelBooking.Application.Common.Messaging;
-using HotelBooking.Application.Features.Auth.Login;
-using HotelBooking.Application.Features.Auth.Logout;
-using HotelBooking.Application.Features.Auth.LogoutAll;
-using HotelBooking.Application.Features.Auth.Refresh;
-using HotelBooking.Application.Features.Auth.Register;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HotelBooking.Application;
 
@@ -17,21 +12,23 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(assembly);
 
-        services.AddScoped<
-            ICommandHandler<RegisterCommand, RegisterResponse>,
-            RegisterCommandHandler>();
+        services.Scan(scan => scan
+            .FromAssemblies(assembly)
+            .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<>)))
+                .AsImplementedInterfaces()
+                .WithScopedLifetime()
+            .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<,>)))
+                .AsImplementedInterfaces()
+                .WithScopedLifetime()
+            .AddClasses(c => c.AssignableTo(typeof(IQueryHandler<,>)))
+                .AsImplementedInterfaces()
+                .WithScopedLifetime());
 
-        services.AddScoped<
-            ICommandHandler<LoginCommand, LoginResponse>,
-            LoginCommandHandler>();
+        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
 
-        services.AddScoped<
-            ICommandHandler<RefreshCommand, RefreshResponse>,
-            RefreshCommandHandler>();
-
-        services.AddScoped<ICommandHandler<LogoutCommand>, LogoutCommandHandler>();
-
-        services.AddScoped<ICommandHandler<LogoutAllCommand>, LogoutAllCommandHandler>();
+        services.AddScoped<IDispatcher, Dispatcher>();
 
         return services;
     }
