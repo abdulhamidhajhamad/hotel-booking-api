@@ -1,7 +1,7 @@
 using FluentValidation;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using HotelBooking.Application.Behaviors;
+using HotelBooking.Application.Common.Messaging;
+using HotelBooking.Application.Features.Auth.Register;
 
 namespace HotelBooking.Application;
 
@@ -11,13 +11,11 @@ public static class DependencyInjection
     {
         var assembly = typeof(DependencyInjection).Assembly;
 
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
-
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
-
         services.AddValidatorsFromAssembly(assembly);
+
+        services.AddScoped<
+            ICommandHandler<RegisterCommand, RegisterResponse>,
+            RegisterCommandHandler>();
 
         return services;
     }

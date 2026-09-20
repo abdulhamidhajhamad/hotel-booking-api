@@ -1,6 +1,6 @@
-using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Features.Auth.Register;
 using HotelBooking.Presentation.Common.Extensions;
 
@@ -10,11 +10,12 @@ namespace HotelBooking.Presentation.Controllers;
 [Route("api/v1/auth")]
 public sealed class AuthController : ControllerBase
 {
-    private readonly IMediator _mediator;
+    private readonly ICommandHandler<RegisterCommand, RegisterResponse> _registerHandler;
 
-    public AuthController(IMediator mediator)
+    public AuthController(
+        ICommandHandler<RegisterCommand, RegisterResponse> registerHandler)
     {
-        _mediator = mediator;
+        _registerHandler = registerHandler;
     }
 
     [HttpPost("register")]
@@ -25,7 +26,7 @@ public sealed class AuthController : ControllerBase
         [FromBody] RegisterCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await _registerHandler.Handle(command, cancellationToken);
         return result.ToActionResult();
     }
 }
