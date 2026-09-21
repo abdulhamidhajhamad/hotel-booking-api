@@ -1,8 +1,6 @@
-﻿using HotelBooking.Domain.Common;
+﻿namespace HotelBooking.Application.Abstractions.Outbox;
 
-namespace HotelBooking.Application.Abstractions.Outbox;
-
-public interface IOutboxHandler<in TEvent> where TEvent : IDomainEvent
+public interface IOutboxHandler<in TEvent> where TEvent : IIntegrationEvent
 {
-    Task HandleAsync(TEvent domainEvent, CancellationToken cancellationToken);
+    Task HandleAsync(TEvent integrationEvent, CancellationToken cancellationToken);
 }
