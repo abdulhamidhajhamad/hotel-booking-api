@@ -6,9 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 using HotelBooking.Application.Abstractions;
+using HotelBooking.Application.Abstractions.Email;
 using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Features.Auth.Abstractions;
 using HotelBooking.Domain.Identity;
+using HotelBooking.Infrastructure.Email;
+using HotelBooking.Infrastructure.Email.Options;
 using HotelBooking.Infrastructure.Identity;
 using HotelBooking.Infrastructure.Identity.Options;
 using HotelBooking.Infrastructure.Persistence;
@@ -24,7 +27,8 @@ public static class DependencyInjection
         string connectionString,
         JwtOptions jwtOptions,
         string redisConnection,
-        CloudinaryOptions cloudinaryOptions)
+        CloudinaryOptions cloudinaryOptions,
+        SmtpOptions smtpOptions)
     {
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString, sql =>
@@ -112,6 +116,9 @@ public static class DependencyInjection
 
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(cloudinaryOptions));
         services.AddScoped<IImageStorage, CloudinaryImageStorage>();
+
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(smtpOptions));
+        services.AddScoped<IEmailSender, MailKitEmailSender>();
 
         return services;
     }

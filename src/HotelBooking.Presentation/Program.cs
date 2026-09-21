@@ -1,6 +1,7 @@
 using HotelBooking.Application;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Infrastructure;
+using HotelBooking.Infrastructure.Email.Options;
 using HotelBooking.Infrastructure.Identity.Options;
 using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage.Options;
@@ -51,8 +52,22 @@ try
         DefaultFolder = Environment.GetEnvironmentVariable("CLOUDINARY_FOLDER") ?? "hotel-booking",
     };
 
+    var smtpOptions = new SmtpOptions
+    {
+        Host = Environment.GetEnvironmentVariable("SMTP_HOST")
+            ?? throw new InvalidOperationException("SMTP_HOST missing - check your .env."),
+        Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT")
+            ?? throw new InvalidOperationException("SMTP_PORT missing - check your .env.")),
+        Username = Environment.GetEnvironmentVariable("SMTP_USERNAME"),
+        Password = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
+        UseSsl = bool.Parse(Environment.GetEnvironmentVariable("SMTP_USE_SSL") ?? "false"),
+        FromEmail = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL")
+            ?? throw new InvalidOperationException("SMTP_FROM_EMAIL missing - check your .env."),
+        FromName = Environment.GetEnvironmentVariable("SMTP_FROM_NAME") ?? "Hotel Booking",
+    };
+
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(connectionString, jwtOptions, redisConnection, cloudinaryOptions);
+    builder.Services.AddInfrastructure(connectionString, jwtOptions, redisConnection, cloudinaryOptions, smtpOptions);
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
