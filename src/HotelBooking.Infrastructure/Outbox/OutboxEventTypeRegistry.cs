@@ -1,5 +1,5 @@
 ﻿using System.Reflection;
-using HotelBooking.Domain.Common;
+using HotelBooking.Application.Abstractions.Outbox;
 
 namespace HotelBooking.Infrastructure.Outbox;
 
@@ -18,7 +18,7 @@ public sealed class OutboxEventTypeRegistry
                 if (type.IsAbstract || type.IsInterface)
                     continue;
 
-                if (!typeof(IDomainEvent).IsAssignableFrom(type))
+                if (!typeof(IIntegrationEvent).IsAssignableFrom(type))
                     continue;
 
                 _byName[type.FullName!] = type;

@@ -10,7 +10,6 @@ using HotelBooking.Application.Abstractions.Email;
 using HotelBooking.Application.Abstractions.Outbox;
 using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Features.Auth.Abstractions;
-using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Identity;
 using HotelBooking.Infrastructure.Email;
 using HotelBooking.Infrastructure.Email.Options;
@@ -35,10 +34,10 @@ public static class DependencyInjection
     {
         services.AddSingleton<OutboxSignal>();
         services.AddSingleton(new OutboxEventTypeRegistry(
-            typeof(IDomainEvent).Assembly,
+            typeof(IIntegrationEvent).Assembly,
             typeof(IOutboxHandler<>).Assembly));
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new OutboxOptions()));
-        services.AddSingleton<DomainEventsToOutboxInterceptor>();
+        services.AddSingleton<OutboxSignalInterceptor>();
 
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
             options
@@ -50,7 +49,7 @@ public static class DependencyInjection
                         maxRetryDelay: TimeSpan.FromSeconds(10),
                         errorNumbersToAdd: null);
                 })
-                .AddInterceptors(sp.GetRequiredService<DomainEventsToOutboxInterceptor>()));
+                .AddInterceptors(sp.GetRequiredService<OutboxSignalInterceptor>()));
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
@@ -134,6 +133,7 @@ public static class DependencyInjection
 
         services.AddScoped<OutboxDispatcher>();
         services.AddScoped<IOutboxAdmin, OutboxAdmin>();
+        services.AddScoped<IOutbox, OutboxWriter>();
         services.AddHostedService<OutboxProcessor>();
 
         return services;
