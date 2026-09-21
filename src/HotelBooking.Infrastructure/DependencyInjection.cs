@@ -133,6 +133,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailSender, MailKitEmailSender>();
 
         services.AddScoped<OutboxDispatcher>();
+        services.AddScoped<IOutboxAdmin, OutboxAdmin>();
         services.AddHostedService<OutboxProcessor>();
 
         return services;
