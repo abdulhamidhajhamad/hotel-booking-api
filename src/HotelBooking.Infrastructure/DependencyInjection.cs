@@ -14,6 +14,7 @@ using HotelBooking.Infrastructure.Email;
 using HotelBooking.Infrastructure.Email.Options;
 using HotelBooking.Infrastructure.Identity;
 using HotelBooking.Infrastructure.Identity.Options;
+using HotelBooking.Infrastructure.Outbox;
 using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage;
 using HotelBooking.Infrastructure.Storage.Options;
@@ -30,15 +31,19 @@ public static class DependencyInjection
         CloudinaryOptions cloudinaryOptions,
         SmtpOptions smtpOptions)
     {
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(connectionString, sql =>
-            {
-                sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                sql.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorNumbersToAdd: null);
-            }));
+        services.AddSingleton<DomainEventsToOutboxInterceptor>();
+
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
+            options
+                .UseSqlServer(connectionString, sql =>
+                {
+                    sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                    sql.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null);
+                })
+                .AddInterceptors(sp.GetRequiredService<DomainEventsToOutboxInterceptor>()));
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
