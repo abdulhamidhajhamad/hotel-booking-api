@@ -33,6 +33,11 @@ public static class DependencyInjection
         CloudinaryOptions cloudinaryOptions,
         SmtpOptions smtpOptions)
     {
+        services.AddSingleton<OutboxSignal>();
+        services.AddSingleton(new OutboxEventTypeRegistry(
+            typeof(IDomainEvent).Assembly,
+            typeof(IOutboxHandler<>).Assembly));
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new OutboxOptions()));
         services.AddSingleton<DomainEventsToOutboxInterceptor>();
 
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
@@ -127,11 +132,8 @@ public static class DependencyInjection
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(smtpOptions));
         services.AddScoped<IEmailSender, MailKitEmailSender>();
 
-        services.AddSingleton<OutboxSignal>();
-        services.AddSingleton(new OutboxEventTypeRegistry(
-            typeof(IDomainEvent).Assembly,
-            typeof(IOutboxHandler<>).Assembly));
         services.AddScoped<OutboxDispatcher>();
+        services.AddHostedService<OutboxProcessor>();
 
         return services;
     }

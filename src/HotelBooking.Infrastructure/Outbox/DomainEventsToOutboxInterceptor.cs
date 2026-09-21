@@ -11,6 +11,13 @@ public sealed class DomainEventsToOutboxInterceptor : SaveChangesInterceptor
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
+    private readonly OutboxSignal _signal;
+
+    public DomainEventsToOutboxInterceptor(OutboxSignal signal)
+    {
+        _signal = signal;
+    }
+
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,
@@ -51,5 +58,14 @@ public sealed class DomainEventsToOutboxInterceptor : SaveChangesInterceptor
         }
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    public override ValueTask<int> SavedChangesAsync(
+        SaveChangesCompletedEventData eventData,
+        int result,
+        CancellationToken cancellationToken = default)
+    {
+        _signal.Notify();
+        return base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 }
