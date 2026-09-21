@@ -16,8 +16,8 @@ public class RegisterCommandHandlerTests
     [Fact]
     public async Task Handle_WhenRegistrarReturnsFailure_PropagatesTheError()
     {
-        var command = new RegisterCommand("dup@test.com", "P@ssw0rd1");
-        _registrar.RegisterAsync(command.Email, command.Password, Arg.Any<CancellationToken>())
+        var command = new RegisterCommand("dup@test.com", "dupuser", "P@ssw0rd1");
+        _registrar.RegisterAsync(command.Email, command.UserName, command.Password, Arg.Any<CancellationToken>())
             .Returns(Result<Guid>.Failure(AuthErrors.EmailAlreadyRegistered(command.Email)));
 
         var result = await _sut.Handle(command, CancellationToken.None);
@@ -30,9 +30,9 @@ public class RegisterCommandHandlerTests
     [Fact]
     public async Task Handle_WhenSuccess_ReturnsRegisterResponse()
     {
-        var command = new RegisterCommand("new@test.com", "P@ssw0rd1");
+        var command = new RegisterCommand("new@test.com", "newuser", "P@ssw0rd1");
         var newUserId = Guid.NewGuid();
-        _registrar.RegisterAsync(command.Email, command.Password, Arg.Any<CancellationToken>())
+        _registrar.RegisterAsync(command.Email, command.UserName, command.Password, Arg.Any<CancellationToken>())
             .Returns(Result<Guid>.Success(newUserId));
 
         var result = await _sut.Handle(command, CancellationToken.None);
@@ -40,5 +40,6 @@ public class RegisterCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.UserId.Should().Be(newUserId);
         result.Value.Email.Should().Be(command.Email);
+        result.Value.UserName.Should().Be(command.UserName);
     }
 }

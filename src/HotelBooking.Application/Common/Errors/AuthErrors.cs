@@ -9,6 +9,11 @@ public static class AuthErrors
             "Auth.EmailAlreadyRegistered",
             $"An account with email '{email}' already exists.");
 
+    public static Error UsernameAlreadyTaken(string userName) =>
+        Error.Conflict(
+            "Auth.UsernameAlreadyTaken",
+            $"The username '{userName}' is already taken.");
+
     public static Error PasswordTooWeak(string reason) =>
         Error.Validation("Auth.PasswordTooWeak", reason);
 
@@ -20,6 +25,7 @@ public static class AuthErrors
 
     public static Error AccountLockedOut() =>
         Error.Unauthorized("Auth.AccountLockedOut", "Account is temporarily locked due to failed login attempts.");
+
     public static Error InvalidRefreshToken() =>
         Error.Unauthorized("Auth.InvalidRefreshToken", "The refresh token is invalid.");
 

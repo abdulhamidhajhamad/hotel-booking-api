@@ -18,16 +18,19 @@ public sealed class AuthFlowTests
     public async Task Register_Login_Refresh_Logout_FullFlow_Works()
     {
         var client = _factory.CreateClient();
-        var email = $"user-{Guid.NewGuid():N}@test.com";
+        var suffix = Guid.NewGuid().ToString("N");
+        var email = $"user-{suffix}@test.com";
+        var userName = $"user{suffix[..8]}";
         var password = "P@ssw0rd123!";
 
         var registerResp = await client.PostAsJsonAsync(
             "/api/v1/auth/register",
-            new RegisterCommand(email, password));
+            new RegisterCommand(email, userName, password));
         registerResp.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var registered = await registerResp.Content.ReadFromJsonAsync<RegisterResponse>();
         registered!.Email.Should().Be(email);
+        registered.UserName.Should().Be(userName);
 
         var loginResp = await client.PostAsJsonAsync(
             "/api/v1/auth/login",
@@ -64,13 +67,17 @@ public sealed class AuthFlowTests
     public async Task Register_WithDuplicateEmail_ReturnsConflict()
     {
         var client = _factory.CreateClient();
-        var email = $"dup-{Guid.NewGuid():N}@test.com";
-        var body = new RegisterCommand(email, "P@ssw0rd123!");
+        var suffix = Guid.NewGuid().ToString("N");
+        var email = $"dup-{suffix}@test.com";
 
-        var first = await client.PostAsJsonAsync("/api/v1/auth/register", body);
+        var first = await client.PostAsJsonAsync(
+            "/api/v1/auth/register",
+            new RegisterCommand(email, $"dupA{suffix[..8]}", "P@ssw0rd123!"));
         first.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var second = await client.PostAsJsonAsync("/api/v1/auth/register", body);
+        var second = await client.PostAsJsonAsync(
+            "/api/v1/auth/register",
+            new RegisterCommand(email, $"dupB{suffix[..8]}", "P@ssw0rd123!"));
         second.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
@@ -78,11 +85,13 @@ public sealed class AuthFlowTests
     public async Task Login_WithWrongPassword_ReturnsUnauthorized()
     {
         var client = _factory.CreateClient();
-        var email = $"wrong-{Guid.NewGuid():N}@test.com";
+        var suffix = Guid.NewGuid().ToString("N");
+        var email = $"wrong-{suffix}@test.com";
+        var userName = $"wrong{suffix[..8]}";
 
         await client.PostAsJsonAsync(
             "/api/v1/auth/register",
-            new RegisterCommand(email, "P@ssw0rd123!"));
+            new RegisterCommand(email, userName, "P@ssw0rd123!"));
 
         var loginResp = await client.PostAsJsonAsync(
             "/api/v1/auth/login",

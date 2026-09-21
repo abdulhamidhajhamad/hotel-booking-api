@@ -10,8 +10,9 @@ public class ValidationBehaviorTests
     {
         var behavior = new ValidationBehavior<RegisterCommand, Result<RegisterResponse>>(
             Array.Empty<IValidator<RegisterCommand>>());
-        var command = new RegisterCommand("a@b.com", "P@ssw0rd1");
-        var expected = Result<RegisterResponse>.Success(new RegisterResponse(Guid.NewGuid(), command.Email));
+        var command = new RegisterCommand("a@b.com", "alice", "P@ssw0rd1");
+        var expected = Result<RegisterResponse>.Success(
+            new RegisterResponse(Guid.NewGuid(), command.Email, command.UserName));
 
         var result = await behavior.Handle(command, () => Task.FromResult(expected), CancellationToken.None);
 
@@ -26,8 +27,9 @@ public class ValidationBehaviorTests
             .Returns(new ValidationResult());
 
         var behavior = new ValidationBehavior<RegisterCommand, Result<RegisterResponse>>(new[] { validator });
-        var command = new RegisterCommand("a@b.com", "P@ssw0rd1");
-        var expected = Result<RegisterResponse>.Success(new RegisterResponse(Guid.NewGuid(), command.Email));
+        var command = new RegisterCommand("a@b.com", "alice", "P@ssw0rd1");
+        var expected = Result<RegisterResponse>.Success(
+            new RegisterResponse(Guid.NewGuid(), command.Email, command.UserName));
 
         var result = await behavior.Handle(command, () => Task.FromResult(expected), CancellationToken.None);
 
@@ -45,12 +47,13 @@ public class ValidationBehaviorTests
             }));
 
         var behavior = new ValidationBehavior<RegisterCommand, Result<RegisterResponse>>(new[] { validator });
-        var command = new RegisterCommand("bad", "short");
+        var command = new RegisterCommand("bad", "al", "short");
         var nextCalled = false;
 
         var result = await behavior.Handle(
             command,
-            () => { nextCalled = true; return Task.FromResult(Result<RegisterResponse>.Success(new RegisterResponse(Guid.NewGuid(), command.Email))); },
+            () => { nextCalled = true; return Task.FromResult(Result<RegisterResponse>.Success(
+                new RegisterResponse(Guid.NewGuid(), command.Email, command.UserName))); },
             CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();

@@ -60,6 +60,7 @@ public static class DependencyInjection
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(jwtOptions));
 
         services.AddScoped<IUserRegistrar, UserRegistrar>();
+        services.AddScoped<IAdminUserCreator, AdminUserCreator>();
         services.AddScoped<IUserAuthenticator, UserAuthenticator>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IRefreshTokenIssuer, RefreshTokenIssuer>();
