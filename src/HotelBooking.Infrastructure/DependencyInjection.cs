@@ -7,8 +7,10 @@ using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Application.Abstractions.Email;
+using HotelBooking.Application.Abstractions.Outbox;
 using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Features.Auth.Abstractions;
+using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Identity;
 using HotelBooking.Infrastructure.Email;
 using HotelBooking.Infrastructure.Email.Options;
@@ -124,6 +126,12 @@ public static class DependencyInjection
 
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(smtpOptions));
         services.AddScoped<IEmailSender, MailKitEmailSender>();
+
+        services.AddSingleton<OutboxSignal>();
+        services.AddSingleton(new OutboxEventTypeRegistry(
+            typeof(IDomainEvent).Assembly,
+            typeof(IOutboxHandler<>).Assembly));
+        services.AddScoped<OutboxDispatcher>();
 
         return services;
     }
