@@ -11,6 +11,13 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
             .EmailAddress()
             .MaximumLength(256);
 
+        RuleFor(x => x.UserName)
+            .NotEmpty()
+            .MinimumLength(3)
+            .MaximumLength(32)
+            .Matches("^[a-zA-Z0-9._-]+$")
+            .WithMessage("Username may contain only letters, digits, dot, underscore, or hyphen.");
+
         RuleFor(x => x.Password)
             .NotEmpty()
             .MinimumLength(8)

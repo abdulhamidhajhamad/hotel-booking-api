@@ -6,6 +6,7 @@ public interface IUserRegistrar
 {
     Task<Result<Guid>> RegisterAsync(
         string email,
+        string userName,
         string password,
         CancellationToken cancellationToken = default);
 }

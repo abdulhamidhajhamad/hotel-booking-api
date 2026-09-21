@@ -19,18 +19,24 @@ public sealed class UserRegistrar : IUserRegistrar
 
     public async Task<Result<Guid>> RegisterAsync(
         string email,
+        string userName,
         string password,
         CancellationToken cancellationToken = default)
     {
-        var existing = await _userManager.FindByEmailAsync(email);
-        if (existing is not null)
-            return Result<Guid>.Failure(AuthErrors.EmailAlreadyRegistered(email));
+        var normalizedEmail = email.Trim();
+        var normalizedUserName = userName.Trim();
+
+        if (await _userManager.FindByEmailAsync(normalizedEmail) is not null)
+            return Result<Guid>.Failure(AuthErrors.EmailAlreadyRegistered(normalizedEmail));
+
+        if (await _userManager.FindByNameAsync(normalizedUserName) is not null)
+            return Result<Guid>.Failure(AuthErrors.UsernameAlreadyTaken(normalizedUserName));
 
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid(),
-            UserName = email,
-            Email = email,
+            UserName = normalizedUserName,
+            Email = normalizedEmail,
         };
 
         var createResult = await _userManager.CreateAsync(user, password);
