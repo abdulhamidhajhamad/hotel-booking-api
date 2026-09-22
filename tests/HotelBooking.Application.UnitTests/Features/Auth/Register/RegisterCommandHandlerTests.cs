@@ -62,4 +62,45 @@ public class RegisterCommandHandlerTests
                 && e.ConfirmationToken == rawToken),
             Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task Handle_WhenSuccess_CallsCollaboratorsInOrder()
+    {
+        var command = new RegisterCommand("order@test.com", "orderuser", "P@ssw0rd1");
+        var newUserId = Guid.NewGuid();
+
+        _registrar.RegisterAsync(command.Email, command.UserName, command.Password, Arg.Any<CancellationToken>())
+            .Returns(Result<Guid>.Success(newUserId));
+        _tokenIssuer.IssueAsync(newUserId, Arg.Any<CancellationToken>())
+            .Returns("token");
+
+        await _sut.Handle(command, CancellationToken.None);
+
+        Received.InOrder(async () =>
+        {
+            await _registrar.RegisterAsync(command.Email, command.UserName, command.Password, Arg.Any<CancellationToken>());
+            await _tokenIssuer.IssueAsync(newUserId, Arg.Any<CancellationToken>());
+            await _outbox.EnqueueAsync(Arg.Any<UserRegisteredEvent>(), Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact]
+    public async Task Handle_ForwardsCancellationTokenToAllCollaborators()
+    {
+        var command = new RegisterCommand("ct@test.com", "ctuser", "P@ssw0rd1");
+        var newUserId = Guid.NewGuid();
+        using var cts = new CancellationTokenSource();
+        var ct = cts.Token;
+
+        _registrar.RegisterAsync(command.Email, command.UserName, command.Password, ct)
+            .Returns(Result<Guid>.Success(newUserId));
+        _tokenIssuer.IssueAsync(newUserId, ct)
+            .Returns("token");
+
+        await _sut.Handle(command, ct);
+
+        await _registrar.Received(1).RegisterAsync(command.Email, command.UserName, command.Password, ct);
+        await _tokenIssuer.Received(1).IssueAsync(newUserId, ct);
+        await _outbox.Received(1).EnqueueAsync(Arg.Any<UserRegisteredEvent>(), ct);
+    }
 }
