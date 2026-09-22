@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using HotelBooking.Domain.Entities;
 
@@ -21,6 +21,7 @@ public interface IApplicationDbContext
     DbSet<HotelVisit> HotelVisits { get; }
     DbSet<Discount> Discounts { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<EmailConfirmationToken> EmailConfirmationTokens { get; }
     DbSet<Domain.Identity.ApplicationUser> Users { get; }
     DatabaseFacade Database { get; }
 
