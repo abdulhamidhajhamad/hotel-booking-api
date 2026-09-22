@@ -82,6 +82,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenIssuer, RefreshTokenIssuer>();
         services.AddScoped<IRefreshTokenRotator, RefreshTokenRotator>();
         services.AddScoped<IRefreshTokenRevoker, RefreshTokenRevoker>();
+        services.AddScoped<IEmailConfirmationTokenIssuer, EmailConfirmationTokenIssuer>();
 
         services.AddSingleton<IConnectionMultiplexer>(_ =>
             ConnectionMultiplexer.Connect(redisConnection));
