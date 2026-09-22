@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using HotelBooking.Application.Common.Messaging;
+using HotelBooking.Application.Features.Auth.ConfirmEmail;
 using HotelBooking.Application.Features.Auth.Login;
 using HotelBooking.Application.Features.Auth.Logout;
 using HotelBooking.Application.Features.Auth.LogoutAll;
@@ -25,6 +26,17 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await _dispatcher.Send(command, cancellationToken);
+        return result.ToActionResult();
+    }
+
+    [HttpPost("confirm-email")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ConfirmEmail(
+        [FromBody] ConfirmEmailCommand command,
         CancellationToken cancellationToken)
     {
         var result = await _dispatcher.Send(command, cancellationToken);

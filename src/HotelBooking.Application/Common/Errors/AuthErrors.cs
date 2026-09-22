@@ -1,4 +1,4 @@
-using HotelBooking.Application.Common.Results;
+﻿using HotelBooking.Application.Common.Results;
 
 namespace HotelBooking.Application.Common.Errors;
 
@@ -35,4 +35,8 @@ public static class AuthErrors
     public static Error RefreshTokenReused() =>
         Error.Unauthorized("Auth.RefreshTokenReused",
             "The refresh token has already been used. All sessions for this account have been revoked.");
+
+    public static Error InvalidOrExpiredToken() =>
+        Error.Validation("Auth.InvalidOrExpiredToken",
+            "The confirmation token is invalid, expired, or already used.");
 }
