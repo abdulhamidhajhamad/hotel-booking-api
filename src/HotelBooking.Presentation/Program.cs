@@ -1,4 +1,4 @@
-using HotelBooking.Application;
+﻿using HotelBooking.Application;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Infrastructure;
 using HotelBooking.Infrastructure.Email.Options;
@@ -66,8 +66,17 @@ try
         FromName = Environment.GetEnvironmentVariable("SMTP_FROM_NAME") ?? "Hotel Booking",
     };
 
+    var emailConfirmationOptions = new EmailConfirmationOptions
+    {
+        TokenLifetimeHours = int.Parse(Environment.GetEnvironmentVariable("EMAIL_CONFIRM_TOKEN_LIFETIME_HOURS") ?? "24"),
+        TokenByteLength = int.Parse(Environment.GetEnvironmentVariable("EMAIL_CONFIRM_TOKEN_BYTE_LENGTH") ?? "32"),
+        ConfirmUrlTemplate = Environment.GetEnvironmentVariable("EMAIL_CONFIRM_URL_TEMPLATE")
+            ?? throw new InvalidOperationException("EMAIL_CONFIRM_URL_TEMPLATE missing - check your .env."),
+        ResendCooldownSeconds = int.Parse(Environment.GetEnvironmentVariable("EMAIL_CONFIRM_RESEND_COOLDOWN_SECONDS") ?? "60"),
+    };
+
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(connectionString, jwtOptions, redisConnection, cloudinaryOptions, smtpOptions);
+    builder.Services.AddInfrastructure(connectionString, jwtOptions, redisConnection, cloudinaryOptions, smtpOptions, emailConfirmationOptions);
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();

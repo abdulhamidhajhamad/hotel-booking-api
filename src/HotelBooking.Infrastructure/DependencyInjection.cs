@@ -30,7 +30,8 @@ public static class DependencyInjection
         JwtOptions jwtOptions,
         string redisConnection,
         CloudinaryOptions cloudinaryOptions,
-        SmtpOptions smtpOptions)
+        SmtpOptions smtpOptions,
+        EmailConfirmationOptions emailConfirmationOptions)
     {
         services.AddSingleton<OutboxSignal>();
         services.AddSingleton(new OutboxEventTypeRegistry(
@@ -129,6 +130,7 @@ public static class DependencyInjection
         services.AddScoped<IImageStorage, CloudinaryImageStorage>();
 
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(smtpOptions));
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(emailConfirmationOptions));
         services.AddScoped<IEmailSender, MailKitEmailSender>();
 
         services.AddScoped<OutboxDispatcher>();
