@@ -8,6 +8,7 @@ using HotelBooking.Application.Features.Auth.Logout;
 using HotelBooking.Application.Features.Auth.LogoutAll;
 using HotelBooking.Application.Features.Auth.Refresh;
 using HotelBooking.Application.Features.Auth.Register;
+using HotelBooking.Application.Features.Auth.ResendConfirmation;
 using HotelBooking.Presentation.Common.Extensions;
 
 namespace HotelBooking.Presentation.Controllers;
@@ -37,6 +38,17 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ConfirmEmail(
         [FromBody] ConfirmEmailCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await _dispatcher.Send(command, cancellationToken);
+        return result.ToActionResult();
+    }
+
+    [HttpPost("resend-confirmation")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResendConfirmation(
+        [FromBody] ResendConfirmationCommand command,
         CancellationToken cancellationToken)
     {
         var result = await _dispatcher.Send(command, cancellationToken);
