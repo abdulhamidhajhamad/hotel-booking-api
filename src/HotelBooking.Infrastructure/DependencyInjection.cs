@@ -12,6 +12,7 @@ using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Features.Auth.Abstractions;
 using HotelBooking.Domain.Identity;
 using HotelBooking.Infrastructure.Email;
+using HotelBooking.Application.Common.Options;
 using HotelBooking.Infrastructure.Email.Options;
 using HotelBooking.Infrastructure.Identity;
 using HotelBooking.Infrastructure.Identity.Options;

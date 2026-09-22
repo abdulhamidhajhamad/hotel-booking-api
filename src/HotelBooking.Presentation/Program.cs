@@ -1,6 +1,7 @@
 ﻿using HotelBooking.Application;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Infrastructure;
+using HotelBooking.Application.Common.Options;
 using HotelBooking.Infrastructure.Email.Options;
 using HotelBooking.Infrastructure.Identity.Options;
 using HotelBooking.Infrastructure.Persistence;

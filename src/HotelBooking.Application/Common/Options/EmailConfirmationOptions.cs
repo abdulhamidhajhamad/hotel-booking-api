@@ -1,4 +1,4 @@
-﻿namespace HotelBooking.Infrastructure.Email.Options;
+﻿namespace HotelBooking.Application.Common.Options;
 
 public sealed class EmailConfirmationOptions
 {

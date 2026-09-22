@@ -2,7 +2,7 @@
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Application.Features.Auth.Abstractions;
 using HotelBooking.Domain.Entities;
-using HotelBooking.Infrastructure.Email.Options;
+using HotelBooking.Application.Common.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
