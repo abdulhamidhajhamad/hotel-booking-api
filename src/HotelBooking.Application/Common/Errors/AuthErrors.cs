@@ -39,4 +39,8 @@ public static class AuthErrors
     public static Error InvalidOrExpiredToken() =>
         Error.Validation("Auth.InvalidOrExpiredToken",
             "The confirmation token is invalid, expired, or already used.");
+
+    public static Error EmailNotConfirmed() =>
+        Error.Forbidden("Auth.EmailNotConfirmed",
+            "Email address has not been confirmed. Please check your inbox.");
 }
