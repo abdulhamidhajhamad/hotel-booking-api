@@ -1,7 +1,7 @@
 ﻿using HotelBooking.Application;
 using HotelBooking.Application.Abstractions;
-using HotelBooking.Infrastructure;
 using HotelBooking.Application.Common.Options;
+using HotelBooking.Infrastructure;
 using HotelBooking.Infrastructure.Email.Options;
 using HotelBooking.Infrastructure.Identity.Options;
 using HotelBooking.Infrastructure.Persistence;
@@ -9,10 +9,13 @@ using HotelBooking.Infrastructure.Storage.Options;
 using HotelBooking.Presentation.Common;
 using HotelBooking.Presentation.Common.Logging;
 using HotelBooking.Presentation.Common.Middleware;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Core;
+using System.Threading.RateLimiting;
 
 DotNetEnv.Env.TraversePath().Load();
 
@@ -90,6 +93,54 @@ try
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
 
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+        options.AddPolicy("auth-register", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: PartitionKeyFor(context),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(15),
+                    QueueLimit = 0,
+                }));
+
+        options.AddPolicy("auth-login", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: PartitionKeyFor(context),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(5),
+                    QueueLimit = 0,
+                }));
+
+        options.AddPolicy("auth-confirm", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: PartitionKeyFor(context),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(5),
+                    QueueLimit = 0,
+                }));
+
+        options.AddPolicy("auth-resend", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: PartitionKeyFor(context),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 3,
+                    Window = TimeSpan.FromMinutes(15),
+                    QueueLimit = 0,
+                }));
+
+        static string PartitionKeyFor(HttpContext context)
+            => context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    });
+
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
@@ -149,6 +200,7 @@ try
 
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseRateLimiter();
 
     app.MapControllers();
     app.MapHealthChecks("/health");
