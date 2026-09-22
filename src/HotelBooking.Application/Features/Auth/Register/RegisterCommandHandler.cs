@@ -20,12 +20,13 @@ public sealed class RegisterCommandHandler
     {
         var result = await _userRegistrar.RegisterAsync(
             command.Email,
+            command.UserName,
             command.Password,
             cancellationToken);
 
         if (result.IsFailure)
             return Result<RegisterResponse>.Failure(result.Error);
 
-        return new RegisterResponse(result.Value, command.Email);
+        return new RegisterResponse(result.Value, command.Email, command.UserName);
     }
 }

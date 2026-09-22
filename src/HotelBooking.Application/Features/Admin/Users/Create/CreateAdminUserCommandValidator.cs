@@ -1,10 +1,12 @@
 using FluentValidation;
 
-namespace HotelBooking.Application.Features.Auth.Register;
+namespace HotelBooking.Application.Features.Admin.Users.Create;
 
-public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand>
+public sealed class CreateAdminUserCommandValidator : AbstractValidator<CreateAdminUserCommand>
 {
-    public RegisterCommandValidator()
+    private static readonly string[] AllowedRoles = { "User", "Admin" };
+
+    public CreateAdminUserCommandValidator()
     {
         RuleFor(x => x.Email)
             .NotEmpty()
@@ -25,5 +27,10 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
             .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
             .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
             .Matches("[0-9]").WithMessage("Password must contain at least one digit.");
+
+        RuleFor(x => x.Role)
+            .NotEmpty()
+            .Must(r => AllowedRoles.Contains(r))
+            .WithMessage("Role must be either 'User' or 'Admin'.");
     }
 }
