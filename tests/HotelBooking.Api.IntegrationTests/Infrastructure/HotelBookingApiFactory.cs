@@ -1,12 +1,14 @@
+using HotelBooking.Api.IntegrationTests.Features.Outbox;
 using HotelBooking.Application.Abstractions.Email;
+using HotelBooking.Application.Abstractions.Outbox;
 using HotelBooking.Infrastructure.Outbox;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Testcontainers.MsSql;
 using Testcontainers.Redis;
+
 namespace HotelBooking.Api.IntegrationTests.Infrastructure;
 
 public sealed class HotelBookingApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
@@ -62,6 +64,15 @@ public sealed class HotelBookingApiFactory : WebApplicationFactory<Program>, IAs
                 BackoffBaseSeconds = 1,
                 BackoffMaxSeconds = 2,
             }));
+
+            services.AddSingleton<IOutboxHandler<DeadLetterTestEvent>, ThrowingDeadLetterHandler>();
+
+            var registryDescriptor = services.Single(d => d.ServiceType == typeof(OutboxEventTypeRegistry));
+            services.Remove(registryDescriptor);
+            services.AddSingleton(new OutboxEventTypeRegistry(
+                typeof(IIntegrationEvent).Assembly,
+                typeof(IOutboxHandler<>).Assembly,
+                typeof(HotelBookingApiFactory).Assembly));
         });
     }
 
