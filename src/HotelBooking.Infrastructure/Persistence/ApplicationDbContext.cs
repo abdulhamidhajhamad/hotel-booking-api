@@ -25,6 +25,7 @@ public class ApplicationDbContext
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<HotelVisit> HotelVisits => Set<HotelVisit>();
+    public DbSet<Discount> Discounts => Set<Discount>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -36,7 +37,6 @@ public class ApplicationDbContext
         builder.Entity<Hotel>().HasQueryFilter(h => !h.IsDeleted);
         builder.Entity<Room>().HasQueryFilter(r => !r.IsDeleted);
         builder.Entity<RoomType>().HasQueryFilter(t => !t.IsDeleted);
-        builder.Entity<Amenity>().HasQueryFilter(a => !a.IsDeleted);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

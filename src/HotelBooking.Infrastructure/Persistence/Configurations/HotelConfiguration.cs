@@ -12,17 +12,12 @@ public class HotelConfiguration : IEntityTypeConfiguration<Hotel>
         builder.Property(h => h.Description).HasMaxLength(2000);
         builder.Property(h => h.Address).IsRequired().HasMaxLength(300);
         builder.Property(h => h.Category).HasConversion<string>().HasMaxLength(20);
+        builder.Property(h => h.OwnerName).HasMaxLength(200);
 
         builder.HasOne(h => h.City)
             .WithMany(c => c.Hotels)
             .HasForeignKey(h => h.CityId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        builder.HasOne(h => h.Owner)
-            .WithMany()
-            .HasForeignKey(h => h.OwnerId)
-            .OnDelete(DeleteBehavior.SetNull)
-            .IsRequired(false);
 
         builder.ToTable(t => t.HasCheckConstraint(
             "CK_Hotel_StarRating",
