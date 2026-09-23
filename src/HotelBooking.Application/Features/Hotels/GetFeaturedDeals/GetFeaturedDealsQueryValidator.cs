@@ -1,7 +1,6 @@
 using FluentValidation;
 
-namespace HotelBooking.Application.Features.Home.GetFeaturedDeals;
-
+namespace HotelBooking.Application.Features.Hotels.GetFeaturedDeals;
 public sealed class GetFeaturedDealsQueryValidator
     : AbstractValidator<GetFeaturedDealsQuery>
 {

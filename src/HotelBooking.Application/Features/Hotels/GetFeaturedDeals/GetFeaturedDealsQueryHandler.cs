@@ -3,8 +3,7 @@ using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
 using Microsoft.EntityFrameworkCore;
 
-namespace HotelBooking.Application.Features.Home.GetFeaturedDeals;
-
+namespace HotelBooking.Application.Features.Hotels.GetFeaturedDeals;
 public sealed class GetFeaturedDealsQueryHandler
     : IQueryHandler<GetFeaturedDealsQuery, IReadOnlyList<FeaturedDealDto>>
 {

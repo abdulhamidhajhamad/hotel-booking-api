@@ -1,5 +1,4 @@
-namespace HotelBooking.Application.Features.Home.GetFeaturedDeals;
-
+namespace HotelBooking.Application.Features.Hotels.GetFeaturedDeals;
 public sealed record FeaturedDealDto(
     Guid HotelId,
     string HotelName,
