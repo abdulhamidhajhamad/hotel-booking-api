@@ -167,7 +167,7 @@ try
     });
 
     builder.Services.AddHealthChecks();
-
+    builder.Services.AddMemoryCache();
     builder.Host.UseSerilog((context, services, configuration) =>
     {
         configuration
