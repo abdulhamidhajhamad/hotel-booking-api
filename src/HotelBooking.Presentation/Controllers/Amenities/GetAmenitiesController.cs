@@ -11,15 +11,15 @@ namespace HotelBooking.Presentation.Controllers.Amenities;
 [ApiController]
 [AllowAnonymous]
 [Route("api/v1/amenities")]
-public sealed class AmenitiesController : ControllerBase
+public sealed class GetAmenitiesController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
 
-    public AmenitiesController(IDispatcher dispatcher) => _dispatcher = dispatcher;
+    public GetAmenitiesController(IDispatcher dispatcher) => _dispatcher = dispatcher;
 
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<AmenityDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetList(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAmenities(CancellationToken cancellationToken)
     {
         var result = await _dispatcher.Send(new GetAmenitiesQuery(), cancellationToken);
         return result.ToActionResult();
