@@ -1,4 +1,11 @@
+using HotelBooking.Api.IntegrationTests.Features.Outbox;
+using HotelBooking.Application.Abstractions.Email;
+using HotelBooking.Application.Abstractions.Outbox;
+using HotelBooking.Infrastructure.Outbox;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Testcontainers.MsSql;
 using Testcontainers.Redis;
 
@@ -14,6 +21,8 @@ public sealed class HotelBookingApiFactory : WebApplicationFactory<Program>, IAs
     private readonly RedisContainer _redis = new RedisBuilder()
         .WithImage("redis:7-alpine")
         .Build();
+
+    public FakeEmailSender Emails => Services.GetRequiredService<FakeEmailSender>();
 
     public async Task InitializeAsync()
     {
@@ -34,6 +43,37 @@ public sealed class HotelBookingApiFactory : WebApplicationFactory<Program>, IAs
         Environment.SetEnvironmentVariable("JWT_ACCESS_MINUTES", "15");
         Environment.SetEnvironmentVariable("JWT_REFRESH_MINUTES", "30");
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+    }
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.ConfigureTestServices(services =>
+        {
+            var senderDescriptor = services.Single(d => d.ServiceType == typeof(IEmailSender));
+            services.Remove(senderDescriptor);
+            services.AddSingleton<FakeEmailSender>();
+            services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
+
+            var outboxOptionsDescriptor = services.Single(d => d.ServiceType == typeof(IOptions<OutboxOptions>));
+            services.Remove(outboxOptionsDescriptor);
+            services.AddSingleton<IOptions<OutboxOptions>>(Options.Create(new OutboxOptions
+            {
+                BatchSize = 20,
+                PollFallbackSeconds = 1,
+                MaxAttempts = 2,
+                BackoffBaseSeconds = 1,
+                BackoffMaxSeconds = 2,
+            }));
+
+            services.AddSingleton<IOutboxHandler<DeadLetterTestEvent>, ThrowingDeadLetterHandler>();
+
+            var registryDescriptor = services.Single(d => d.ServiceType == typeof(OutboxEventTypeRegistry));
+            services.Remove(registryDescriptor);
+            services.AddSingleton(new OutboxEventTypeRegistry(
+                typeof(IIntegrationEvent).Assembly,
+                typeof(IOutboxHandler<>).Assembly,
+                typeof(HotelBookingApiFactory).Assembly));
+        });
     }
 
     public new async Task DisposeAsync()

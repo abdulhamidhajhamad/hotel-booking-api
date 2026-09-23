@@ -1,4 +1,5 @@
-using FluentValidation;
+﻿using FluentValidation;
+using HotelBooking.Application.Abstractions.Outbox;
 using HotelBooking.Application.Common.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,6 +22,9 @@ public static class DependencyInjection
                 .AsImplementedInterfaces()
                 .WithScopedLifetime()
             .AddClasses(c => c.AssignableTo(typeof(IQueryHandler<,>)))
+                .AsImplementedInterfaces()
+                .WithScopedLifetime()
+            .AddClasses(c => c.AssignableTo(typeof(IOutboxHandler<>)))
                 .AsImplementedInterfaces()
                 .WithScopedLifetime());
 

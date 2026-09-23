@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Domain.Identity;
+using HotelBooking.Infrastructure.Outbox;
 
 namespace HotelBooking.Infrastructure.Persistence;
 
@@ -27,6 +28,8 @@ public class ApplicationDbContext
     public DbSet<HotelVisit> HotelVisits => Set<HotelVisit>();
     public DbSet<Discount> Discounts => Set<Discount>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<EmailConfirmationToken> EmailConfirmationTokens => Set<EmailConfirmationToken>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

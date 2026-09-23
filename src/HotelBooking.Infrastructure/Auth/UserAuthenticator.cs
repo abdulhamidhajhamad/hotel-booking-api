@@ -38,6 +38,10 @@ public sealed class UserAuthenticator : IUserAuthenticator
         }
 
         await _userManager.ResetAccessFailedCountAsync(user);
+
+        if (!user.EmailConfirmed)
+            return Result<AuthenticatedUser>.Failure(AuthErrors.EmailNotConfirmed());
+
         var roles = await _userManager.GetRolesAsync(user);
 
         return new AuthenticatedUser(user.Id, user.Email!, roles.ToArray());

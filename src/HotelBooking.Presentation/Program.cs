@@ -1,16 +1,21 @@
-using HotelBooking.Application;
+﻿using HotelBooking.Application;
 using HotelBooking.Application.Abstractions;
+using HotelBooking.Application.Common.Options;
 using HotelBooking.Infrastructure;
+using HotelBooking.Infrastructure.Email.Options;
 using HotelBooking.Infrastructure.Identity.Options;
 using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage.Options;
 using HotelBooking.Presentation.Common;
 using HotelBooking.Presentation.Common.Logging;
 using HotelBooking.Presentation.Common.Middleware;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Core;
+using System.Threading.RateLimiting;
 
 DotNetEnv.Env.TraversePath().Load();
 
@@ -51,8 +56,31 @@ try
         DefaultFolder = Environment.GetEnvironmentVariable("CLOUDINARY_FOLDER") ?? "hotel-booking",
     };
 
+    var smtpOptions = new SmtpOptions
+    {
+        Host = Environment.GetEnvironmentVariable("SMTP_HOST")
+            ?? throw new InvalidOperationException("SMTP_HOST missing - check your .env."),
+        Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT")
+            ?? throw new InvalidOperationException("SMTP_PORT missing - check your .env.")),
+        Username = Environment.GetEnvironmentVariable("SMTP_USERNAME"),
+        Password = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
+        UseSsl = bool.Parse(Environment.GetEnvironmentVariable("SMTP_USE_SSL") ?? "false"),
+        FromEmail = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL")
+            ?? throw new InvalidOperationException("SMTP_FROM_EMAIL missing - check your .env."),
+        FromName = Environment.GetEnvironmentVariable("SMTP_FROM_NAME") ?? "Hotel Booking",
+    };
+
+    var emailConfirmationOptions = new EmailConfirmationOptions
+    {
+        TokenLifetimeHours = int.Parse(Environment.GetEnvironmentVariable("EMAIL_CONFIRM_TOKEN_LIFETIME_HOURS") ?? "24"),
+        TokenByteLength = int.Parse(Environment.GetEnvironmentVariable("EMAIL_CONFIRM_TOKEN_BYTE_LENGTH") ?? "32"),
+        ConfirmUrlTemplate = Environment.GetEnvironmentVariable("EMAIL_CONFIRM_URL_TEMPLATE")
+            ?? throw new InvalidOperationException("EMAIL_CONFIRM_URL_TEMPLATE missing - check your .env."),
+        ResendCooldownSeconds = int.Parse(Environment.GetEnvironmentVariable("EMAIL_CONFIRM_RESEND_COOLDOWN_SECONDS") ?? "60"),
+    };
+
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(connectionString, jwtOptions, redisConnection, cloudinaryOptions);
+    builder.Services.AddInfrastructure(connectionString, jwtOptions, redisConnection, cloudinaryOptions, smtpOptions, emailConfirmationOptions);
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
@@ -64,6 +92,54 @@ try
 
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
+
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+        options.AddPolicy("auth-register", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: PartitionKeyFor(context),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(15),
+                    QueueLimit = 0,
+                }));
+
+        options.AddPolicy("auth-login", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: PartitionKeyFor(context),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(5),
+                    QueueLimit = 0,
+                }));
+
+        options.AddPolicy("auth-confirm", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: PartitionKeyFor(context),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(5),
+                    QueueLimit = 0,
+                }));
+
+        options.AddPolicy("auth-resend", context =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: PartitionKeyFor(context),
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 3,
+                    Window = TimeSpan.FromMinutes(15),
+                    QueueLimit = 0,
+                }));
+
+        static string PartitionKeyFor(HttpContext context)
+            => context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    });
 
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
@@ -124,6 +200,7 @@ try
 
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseRateLimiter();
 
     app.MapControllers();
     app.MapHealthChecks("/health");

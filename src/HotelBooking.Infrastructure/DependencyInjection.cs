@@ -6,11 +6,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 using HotelBooking.Application.Abstractions;
+using HotelBooking.Application.Abstractions.Email;
+using HotelBooking.Application.Abstractions.Outbox;
 using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Features.Auth.Abstractions;
 using HotelBooking.Domain.Identity;
+using HotelBooking.Infrastructure.Email;
+using HotelBooking.Application.Common.Options;
+using HotelBooking.Infrastructure.Email.Options;
 using HotelBooking.Infrastructure.Identity;
 using HotelBooking.Infrastructure.Identity.Options;
+using HotelBooking.Infrastructure.Outbox;
 using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage;
 using HotelBooking.Infrastructure.Storage.Options;
@@ -24,17 +30,28 @@ public static class DependencyInjection
         string connectionString,
         JwtOptions jwtOptions,
         string redisConnection,
-        CloudinaryOptions cloudinaryOptions)
+        CloudinaryOptions cloudinaryOptions,
+        SmtpOptions smtpOptions,
+        EmailConfirmationOptions emailConfirmationOptions)
     {
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(connectionString, sql =>
-            {
-                sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                sql.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorNumbersToAdd: null);
-            }));
+        services.AddSingleton<OutboxSignal>();
+        services.AddSingleton(new OutboxEventTypeRegistry(
+            typeof(IIntegrationEvent).Assembly,
+            typeof(IOutboxHandler<>).Assembly));
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new OutboxOptions()));
+        services.AddSingleton<OutboxSignalInterceptor>();
+
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
+            options
+                .UseSqlServer(connectionString, sql =>
+                {
+                    sql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                    sql.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null);
+                })
+                .AddInterceptors(sp.GetRequiredService<OutboxSignalInterceptor>()));
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
@@ -66,6 +83,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenIssuer, RefreshTokenIssuer>();
         services.AddScoped<IRefreshTokenRotator, RefreshTokenRotator>();
         services.AddScoped<IRefreshTokenRevoker, RefreshTokenRevoker>();
+        services.AddScoped<IEmailConfirmationTokenIssuer, EmailConfirmationTokenIssuer>();
 
         services.AddSingleton<IConnectionMultiplexer>(_ =>
             ConnectionMultiplexer.Connect(redisConnection));
@@ -112,6 +130,15 @@ public static class DependencyInjection
 
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(cloudinaryOptions));
         services.AddScoped<IImageStorage, CloudinaryImageStorage>();
+
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(smtpOptions));
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(emailConfirmationOptions));
+        services.AddScoped<IEmailSender, MailKitEmailSender>();
+
+        services.AddScoped<OutboxDispatcher>();
+        services.AddScoped<IOutboxAdmin, OutboxAdmin>();
+        services.AddScoped<IOutbox, OutboxWriter>();
+        services.AddHostedService<OutboxProcessor>();
 
         return services;
     }
