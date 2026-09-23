@@ -5,16 +5,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace HotelBooking.Presentation.Controllers;
+namespace HotelBooking.Presentation.Controllers.Hotels;
 
 [ApiController]
 [AllowAnonymous]
 [Route("api/v1/hotels")]
-public sealed class HotelsController : ControllerBase
+public sealed class GetFeaturedDealsController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
 
-    public HotelsController(IDispatcher dispatcher) => _dispatcher = dispatcher;
+    public GetFeaturedDealsController(IDispatcher dispatcher) => _dispatcher = dispatcher;
 
     [HttpGet("featured-deals")]
     [ProducesResponseType(typeof(IReadOnlyList<FeaturedDealDto>), StatusCodes.Status200OK)]
