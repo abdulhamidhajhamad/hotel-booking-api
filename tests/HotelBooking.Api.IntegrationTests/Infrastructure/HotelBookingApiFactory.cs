@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Testcontainers.MsSql;
 using Testcontainers.Redis;
+using Microsoft.AspNetCore.TestHost;
 
 namespace HotelBooking.Api.IntegrationTests.Infrastructure;
 
