@@ -18,7 +18,6 @@ public interface IApplicationDbContext
     DbSet<BookingGroup> BookingGroups { get; }
     DbSet<Booking> Bookings { get; }
     DbSet<Payment> Payments { get; }
-    DbSet<HotelVisit> HotelVisits { get; }
     DbSet<Discount> Discounts { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<EmailConfirmationToken> EmailConfirmationTokens { get; }

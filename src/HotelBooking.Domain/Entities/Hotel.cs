@@ -1,4 +1,4 @@
-using HotelBooking.Domain.Common;
+﻿using HotelBooking.Domain.Common;
 
 namespace HotelBooking.Domain.Entities;
 public class Hotel : BaseEntity
@@ -20,5 +20,4 @@ public class Hotel : BaseEntity
     public ICollection<Room> Rooms { get; set; } = new List<Room>();
     public ICollection<HotelImage> Images { get; set; } = new List<HotelImage>();
     public ICollection<HotelAmenity> HotelAmenities { get; set; } = new List<HotelAmenity>();
-    public ICollection<HotelVisit> Visits { get; set; } = new List<HotelVisit>();
 }
