@@ -23,6 +23,6 @@ public interface IApplicationDbContext
     DbSet<EmailConfirmationToken> EmailConfirmationTokens { get; }
     DbSet<Domain.Identity.ApplicationUser> Users { get; }
     DatabaseFacade Database { get; }
-
+	DbSet<CityImage> CityImages { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

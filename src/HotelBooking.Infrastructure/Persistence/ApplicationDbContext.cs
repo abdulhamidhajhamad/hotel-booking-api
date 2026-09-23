@@ -29,6 +29,7 @@ public class ApplicationDbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens => Set<EmailConfirmationToken>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<CityImage> CityImages => Set<CityImage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
