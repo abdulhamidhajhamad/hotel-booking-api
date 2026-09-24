@@ -18,5 +18,22 @@ public sealed class CheckoutCommandValidator : AbstractValidator<CheckoutCommand
             room.RuleFor(r => r.Adults).GreaterThanOrEqualTo(1);
             room.RuleFor(r => r.Children).GreaterThanOrEqualTo(0);
         });
+
+        RuleFor(x => x.Rooms)
+            .Must(HaveNoOverlappingDatesPerRoom)
+            .WithMessage("The same room cannot be booked for overlapping date ranges in one request.");
+    }
+
+    private static bool HaveNoOverlappingDatesPerRoom(IReadOnlyList<CheckoutRoomItem> rooms)
+    {
+        foreach (var perRoom in rooms.GroupBy(r => r.RoomId))
+        {
+            var ordered = perRoom.OrderBy(r => r.CheckInDate).ToList();
+            for (var i = 1; i < ordered.Count; i++)
+                if (ordered[i].CheckInDate < ordered[i - 1].CheckOutDate)
+                    return false;
+        }
+
+        return true;
     }
 }

@@ -14,6 +14,8 @@ namespace HotelBooking.Application.Features.Bookings.Checkout;
 
 public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, CheckoutResult>
 {
+    private const int PendingHoldTtlMinutes = 15;
+
     private readonly IApplicationDbContext _db;
     private readonly IPaymentGateway _paymentGateway;
     private readonly ICurrentUser _currentUser;
@@ -79,13 +81,36 @@ public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, Ch
             for (var date = item.CheckInDate; date < item.CheckOutDate; date = date.AddDays(1))
                 requestedSlots.Add((item.RoomId, date));
 
-        var takenSlots = await _db.RoomAvailability
-            .Where(a => roomIds.Contains(a.RoomId))
-            .Select(a => new { a.RoomId, a.Date })
-            .ToListAsync(cancellationToken);
+        var staleThreshold = DateTimeOffset.UtcNow.AddMinutes(-PendingHoldTtlMinutes);
 
-        if (takenSlots.Any(t => requestedSlots.Contains((t.RoomId, t.Date))))
-            return Result<CheckoutResult>.Failure(BookingErrors.RoomNotAvailable());
+        var existingBySlot = (await _db.RoomAvailability
+            .Where(a => roomIds.Contains(a.RoomId))
+            .Select(a => new ExistingSlot(
+                a.RoomId,
+                a.Date,
+                a.BookingId,
+                a.Booking != null ? a.Booking.Status : (BookingStatus?)null,
+                a.Booking != null ? a.Booking.CreatedAt : (DateTimeOffset?)null))
+            .ToListAsync(cancellationToken))
+            .ToDictionary(s => (s.RoomId, s.Date));
+
+        var reclaimableOldBooking = new Dictionary<(Guid RoomId, DateOnly Date), Guid>();
+
+        foreach (var slot in requestedSlots)
+        {
+            if (!existingBySlot.TryGetValue(slot, out var occupied))
+                continue;
+
+            var isStalePending = occupied.BookingStatus == BookingStatus.Pending
+                && occupied.BookingId is not null
+                && occupied.BookingCreatedAt is { } createdAt
+                && createdAt < staleThreshold;
+
+            if (!isStalePending)
+                return Result<CheckoutResult>.Failure(BookingErrors.RoomNotAvailable());
+
+            reclaimableOldBooking[slot] = occupied.BookingId!.Value;
+        }
 
         var group = new BookingGroup
         {
@@ -94,6 +119,7 @@ public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, Ch
             SpecialRequests = command.SpecialRequests,
         };
 
+        var reclaimPlan = new List<ReclaimPlanItem>();
         decimal groupTotal = 0m;
 
         foreach (var item in command.Rooms)
@@ -120,21 +146,24 @@ public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, Ch
             };
 
             for (var date = item.CheckInDate; date < item.CheckOutDate; date = date.AddDays(1))
+            {
+                if (reclaimableOldBooking.TryGetValue((item.RoomId, date), out var oldBookingId))
+                {
+                    reclaimPlan.Add(new ReclaimPlanItem(item.RoomId, date, oldBookingId, booking.Id));
+                    continue;
+                }
+
                 booking.AvailabilityHolds.Add(new RoomAvailability
                 {
                     RoomId = item.RoomId,
                     Date = date,
                 });
+            }
 
             group.Bookings.Add(booking);
         }
 
         group.TotalPrice = groupTotal;
-
-        var intent = await _paymentGateway.CreateIntentAsync(
-            new CreatePaymentIntentRequest(
-                groupTotal, "USD", command.IdempotencyKey, $"Booking {group.ConfirmationNumber}"),
-            cancellationToken);
 
         var payment = new Payment
         {
@@ -142,7 +171,7 @@ public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, Ch
             Amount = groupTotal,
             Currency = "USD",
             Provider = "Stripe",
-            ProviderTransactionId = intent.PaymentIntentId,
+            ProviderTransactionId = null,
             IdempotencyKey = command.IdempotencyKey,
             Status = PaymentStatus.Pending,
         };
@@ -153,16 +182,17 @@ public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, Ch
             Key = command.IdempotencyKey,
             RequestHash = requestHash,
             Status = IdempotencyStatus.Pending,
+            CreatedAt = DateTimeOffset.UtcNow,
         };
 
         _db.BookingGroups.Add(group);
         _db.IdempotencyRecords.Add(record);
 
-        try
-        {
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
+        var outcome = reclaimPlan.Count == 0
+            ? await SaveReservationAsync(cancellationToken)
+            : await SaveReservationWithReclaimAsync(reclaimPlan, cancellationToken);
+
+        if (outcome == PersistOutcome.DuplicateKey)
         {
             var raced = await _db.IdempotencyRecords
                 .FirstOrDefaultAsync(r => r.Key == command.IdempotencyKey, cancellationToken);
@@ -171,6 +201,17 @@ public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, Ch
                 ? await ReplayAsync(raced, requestHash, cancellationToken)
                 : Result<CheckoutResult>.Failure(BookingErrors.RoomNotAvailable());
         }
+
+        if (outcome == PersistOutcome.ReclaimLost)
+            return Result<CheckoutResult>.Failure(BookingErrors.RoomNotAvailable());
+
+        var intent = await _paymentGateway.CreateIntentAsync(
+            new CreatePaymentIntentRequest(
+                groupTotal, "USD", command.IdempotencyKey, $"Booking {group.ConfirmationNumber}"),
+            cancellationToken);
+
+        payment.ProviderTransactionId = intent.PaymentIntentId;
+        await _db.SaveChangesAsync(cancellationToken);
 
         var confirmation = await _paymentGateway.ConfirmIntentAsync(
             new ConfirmPaymentIntentRequest(
@@ -193,10 +234,13 @@ public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, Ch
             payment.Status = PaymentStatus.Failed;
             payment.ProcessedAt = completedAt;
             foreach (var booking in group.Bookings)
-            {
                 booking.Status = BookingStatus.Cancelled;
-                _db.RoomAvailability.RemoveRange(booking.AvailabilityHolds);
-            }
+
+            var bookingIds = group.Bookings.Select(b => b.Id).ToList();
+            var holds = await _db.RoomAvailability
+                .Where(a => a.BookingId != null && bookingIds.Contains(a.BookingId.Value))
+                .ToListAsync(cancellationToken);
+            _db.RoomAvailability.RemoveRange(holds);
         }
 
         record.Status = IdempotencyStatus.Completed;
@@ -209,6 +253,64 @@ public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, Ch
             ? Result<CheckoutResult>.Success(new CheckoutResult(
                 group.Id, group.ConfirmationNumber, PaymentStatus.Succeeded.ToString(), groupTotal))
             : Result<CheckoutResult>.Failure(BookingErrors.PaymentFailed(confirmation.FailureReason));
+    }
+
+    private async Task<PersistOutcome> SaveReservationAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+            return PersistOutcome.Success;
+        }
+        catch (DbUpdateException)
+        {
+            return PersistOutcome.DuplicateKey;
+        }
+    }
+
+    private async Task<PersistOutcome> SaveReservationWithReclaimAsync(
+        IReadOnlyList<ReclaimPlanItem> reclaimPlan,
+        CancellationToken cancellationToken)
+    {
+        var strategy = _db.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                return PersistOutcome.DuplicateKey;
+            }
+
+            foreach (var item in reclaimPlan)
+            {
+                var affected = await _db.RoomAvailability
+                    .Where(a => a.RoomId == item.RoomId
+                             && a.Date == item.Date
+                             && a.BookingId == item.OldBookingId)
+                    .ExecuteUpdateAsync(
+                        s => s.SetProperty(a => a.BookingId, item.NewBookingId),
+                        cancellationToken);
+
+                if (affected != 1)
+                    return PersistOutcome.ReclaimLost;
+            }
+
+            var oldBookingIds = reclaimPlan.Select(i => i.OldBookingId).Distinct().ToList();
+            await _db.Bookings
+                .Where(b => oldBookingIds.Contains(b.Id) && b.Status == BookingStatus.Pending)
+                .ExecuteUpdateAsync(
+                    s => s.SetProperty(b => b.Status, BookingStatus.Cancelled),
+                    cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+            return PersistOutcome.Success;
+        });
     }
 
     private async Task<Result<CheckoutResult>> ReplayAsync(
@@ -268,6 +370,13 @@ public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, Ch
         return Convert.ToHexString(hash);
     }
 
+    private enum PersistOutcome
+    {
+        Success,
+        DuplicateKey,
+        ReclaimLost
+    }
+
     private sealed record RoomPricing(
         Guid RoomId,
         bool IsActive,
@@ -275,4 +384,17 @@ public sealed class CheckoutCommandHandler : ICommandHandler<CheckoutCommand, Ch
         int ChildrenCapacity,
         decimal PricePerNight,
         decimal? DiscountPercentage);
+
+    private sealed record ExistingSlot(
+        Guid RoomId,
+        DateOnly Date,
+        Guid? BookingId,
+        BookingStatus? BookingStatus,
+        DateTimeOffset? BookingCreatedAt);
+
+    private sealed record ReclaimPlanItem(
+        Guid RoomId,
+        DateOnly Date,
+        Guid OldBookingId,
+        Guid NewBookingId);
 }
