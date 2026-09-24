@@ -31,4 +31,10 @@ public static class BookingErrors
 
     public static Error PaymentFailed(string? reason) =>
         Error.Conflict("Booking.PaymentFailed", reason ?? "The payment was declined.");
+
+    public static Error BookingGroupNotFound(Guid bookingGroupId) =>
+        Error.NotFound("Booking.NotFound", $"Booking '{bookingGroupId}' was not found.");
+
+    public static Error InvoiceForbidden() =>
+        Error.Forbidden("Booking.InvoiceForbidden", "You are not allowed to access this invoice.");
 }
