@@ -24,5 +24,6 @@ public interface IApplicationDbContext
     DbSet<Domain.Identity.ApplicationUser> Users { get; }
     DatabaseFacade Database { get; }
 	DbSet<CityImage> CityImages { get; }
+    DbSet<IdempotencyRecord> IdempotencyRecords { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -23,3 +23,9 @@ public enum PaymentStatus
     Failed = 2,
     Refunded = 3
 }
+
+public enum IdempotencyStatus
+{
+    Pending = 0,
+    Completed = 1
+}
