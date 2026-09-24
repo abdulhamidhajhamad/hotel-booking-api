@@ -1,6 +1,12 @@
+using System.Text.Json;
+using HotelBooking.Application.Features.Auth.Common;
+using HotelBooking.Application.Features.Auth.ConfirmEmail;
 using HotelBooking.Application.Features.Auth.Login;
 using HotelBooking.Application.Features.Auth.Refresh;
 using HotelBooking.Application.Features.Auth.Register;
+using HotelBooking.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace HotelBooking.Api.IntegrationTests.Features.Auth;
 
@@ -15,7 +21,7 @@ public sealed class AuthFlowTests
     }
 
     [Fact]
-    public async Task Register_Login_Refresh_Logout_FullFlow_Works()
+    public async Task Register_Confirm_Login_Refresh_Logout_FullFlow_Works()
     {
         var client = _factory.CreateClient();
         var suffix = Guid.NewGuid().ToString("N");
@@ -31,6 +37,14 @@ public sealed class AuthFlowTests
         var registered = await registerResp.Content.ReadFromJsonAsync<RegisterResponse>();
         registered!.Email.Should().Be(email);
         registered.UserName.Should().Be(userName);
+
+        var token = await ReadConfirmationTokenAsync(email);
+        token.Should().NotBeNullOrEmpty();
+
+        var confirmResp = await client.PostAsJsonAsync(
+            "/api/v1/auth/confirm-email",
+            new ConfirmEmailCommand(token!));
+        confirmResp.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var loginResp = await client.PostAsJsonAsync(
             "/api/v1/auth/login",
@@ -98,5 +112,28 @@ public sealed class AuthFlowTests
             new LoginCommand(email, "wrong-password"));
 
         loginResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    private async Task<string?> ReadConfirmationTokenAsync(string email)
+    {
+        var typeName = typeof(UserRegisteredEvent).FullName!;
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        for (var i = 0; i < 50; i++)
+        {
+            var row = await db.OutboxMessages
+                .AsNoTracking()
+                .Where(m => m.Type == typeName && m.Payload.Contains(email))
+                .OrderByDescending(m => m.OccurredAtUtc)
+                .FirstOrDefaultAsync();
+            if (row is not null)
+            {
+                using var doc = JsonDocument.Parse(row.Payload);
+                return doc.RootElement.GetProperty("confirmationToken").GetString();
+            }
+            await Task.Delay(100);
+        }
+        return null;
     }
 }
