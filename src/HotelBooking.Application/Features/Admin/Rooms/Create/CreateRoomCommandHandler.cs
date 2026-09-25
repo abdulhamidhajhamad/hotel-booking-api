@@ -17,22 +17,29 @@ public sealed class CreateRoomCommandHandler : ICommandHandler<CreateRoomCommand
         CreateRoomCommand command,
         CancellationToken cancellationToken)
     {
-        var hotel = await _db.Hotels.AsNoTracking()
-            .FirstOrDefaultAsync(h => h.Id == command.HotelId, cancellationToken);
-        if (hotel is null)
-            return RoomErrors.HotelNotFound(command.HotelId);
-
-        var roomType = await _db.RoomTypes.AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == command.RoomTypeId, cancellationToken);
-        if (roomType is null)
-            return RoomErrors.RoomTypeNotFound(command.RoomTypeId);
-
         var number = command.Number.Trim();
 
-        var duplicate = await _db.Rooms.AnyAsync(
-            r => r.HotelId == command.HotelId && r.Number == number,
-            cancellationToken);
-        if (duplicate)
+        var lookup = await _db.Hotels
+            .Where(h => h.Id == command.HotelId)
+            .Select(h => new
+            {
+                HotelName = h.Name,
+                RoomType = _db.RoomTypes
+                    .Where(t => t.Id == command.RoomTypeId)
+                    .Select(t => new { t.Id, t.Name })
+                    .FirstOrDefault(),
+                DuplicateNumber = _db.Rooms
+                    .Any(r => r.HotelId == command.HotelId && r.Number == number),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (lookup is null)
+            return RoomErrors.HotelNotFound(command.HotelId);
+
+        if (lookup.RoomType is null)
+            return RoomErrors.RoomTypeNotFound(command.RoomTypeId);
+
+        if (lookup.DuplicateNumber)
             return RoomErrors.DuplicateNumber(command.HotelId, number);
 
         var room = new Room
@@ -50,10 +57,10 @@ public sealed class CreateRoomCommandHandler : ICommandHandler<CreateRoomCommand
 
         return new RoomDetail(
             room.Id,
-            hotel.Id,
-            hotel.Name,
-            roomType.Id,
-            roomType.Name,
+            command.HotelId,
+            lookup.HotelName,
+            lookup.RoomType.Id,
+            lookup.RoomType.Name,
             room.Number,
             room.AdultsCapacity,
             room.ChildrenCapacity,
