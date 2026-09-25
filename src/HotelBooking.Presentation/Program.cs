@@ -4,6 +4,7 @@ using HotelBooking.Application.Common.Options;
 using HotelBooking.Infrastructure;
 using HotelBooking.Infrastructure.Email.Options;
 using HotelBooking.Infrastructure.Identity.Options;
+using HotelBooking.Infrastructure.Payments.Options;
 using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage.Options;
 using HotelBooking.Presentation.Common;
@@ -79,8 +80,15 @@ try
         ResendCooldownSeconds = int.Parse(Environment.GetEnvironmentVariable("EMAIL_CONFIRM_RESEND_COOLDOWN_SECONDS") ?? "60"),
     };
 
+    var stripeOptions = new StripeOptions
+    {
+        SecretKey = Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY")
+            ?? throw new InvalidOperationException("STRIPE_SECRET_KEY missing - check your .env."),
+        Currency = Environment.GetEnvironmentVariable("STRIPE_CURRENCY") ?? "USD",
+    };
+
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(connectionString, jwtOptions, redisConnection, cloudinaryOptions, smtpOptions, emailConfirmationOptions);
+    builder.Services.AddInfrastructure(connectionString, jwtOptions, redisConnection, cloudinaryOptions, smtpOptions, emailConfirmationOptions, stripeOptions);
 
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
@@ -167,7 +175,7 @@ try
     });
 
     builder.Services.AddHealthChecks();
-
+    builder.Services.AddMemoryCache();
     builder.Host.UseSerilog((context, services, configuration) =>
     {
         configuration

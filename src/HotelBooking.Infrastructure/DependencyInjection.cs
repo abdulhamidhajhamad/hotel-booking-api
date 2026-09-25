@@ -7,7 +7,9 @@ using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Application.Abstractions.Email;
+using HotelBooking.Application.Abstractions.Invoicing;
 using HotelBooking.Application.Abstractions.Outbox;
+using HotelBooking.Application.Abstractions.Payments;
 using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Features.Auth.Abstractions;
 using HotelBooking.Domain.Identity;
@@ -16,7 +18,10 @@ using HotelBooking.Application.Common.Options;
 using HotelBooking.Infrastructure.Email.Options;
 using HotelBooking.Infrastructure.Identity;
 using HotelBooking.Infrastructure.Identity.Options;
+using HotelBooking.Infrastructure.Invoicing;
 using HotelBooking.Infrastructure.Outbox;
+using HotelBooking.Infrastructure.Payments;
+using HotelBooking.Infrastructure.Payments.Options;
 using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage;
 using HotelBooking.Infrastructure.Storage.Options;
@@ -32,7 +37,8 @@ public static class DependencyInjection
         string redisConnection,
         CloudinaryOptions cloudinaryOptions,
         SmtpOptions smtpOptions,
-        EmailConfirmationOptions emailConfirmationOptions)
+        EmailConfirmationOptions emailConfirmationOptions,
+        StripeOptions stripeOptions)
     {
         services.AddSingleton<OutboxSignal>();
         services.AddSingleton(new OutboxEventTypeRegistry(
@@ -134,6 +140,12 @@ public static class DependencyInjection
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(smtpOptions));
         services.AddSingleton(Microsoft.Extensions.Options.Options.Create(emailConfirmationOptions));
         services.AddScoped<IEmailSender, MailKitEmailSender>();
+
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(stripeOptions));
+        services.AddScoped<IPaymentGateway, StripePaymentGateway>();
+        services.AddSingleton<IInvoiceRenderer, QuestPdfInvoiceRenderer>();
 
         services.AddScoped<OutboxDispatcher>();
         services.AddScoped<IOutboxAdmin, OutboxAdmin>();

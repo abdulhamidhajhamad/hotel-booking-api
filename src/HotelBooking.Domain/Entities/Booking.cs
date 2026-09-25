@@ -14,8 +14,8 @@ public class Booking : BaseEntity
     public DateOnly CheckOutDate { get; set; }
     public int AdultsCount { get; set; }
     public int ChildrenCount { get; set; }
-
     public decimal PricePerNightSnapshot { get; set; }
+    public decimal OriginalPricePerNightSnapshot { get; set; }
     public decimal TotalPrice { get; set; }
     public BookingStatus Status { get; set; } = BookingStatus.Pending;
 

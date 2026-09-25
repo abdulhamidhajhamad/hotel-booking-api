@@ -9,4 +9,5 @@ public class City : BaseEntity
     public string Timezone { get; set; } = default!;
 
     public ICollection<Hotel> Hotels { get; set; } = new List<Hotel>();
+    public ICollection<CityImage> Images { get; set; } = new List<CityImage>();
 }

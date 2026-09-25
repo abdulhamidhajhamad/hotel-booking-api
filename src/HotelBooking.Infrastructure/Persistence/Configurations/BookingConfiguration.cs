@@ -9,6 +9,7 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
     public void Configure(EntityTypeBuilder<Booking> builder)
     {
         builder.Property(b => b.PricePerNightSnapshot).HasColumnType("decimal(18,2)");
+        builder.Property(b => b.OriginalPricePerNightSnapshot).HasColumnType("decimal(18,2)");
         builder.Property(b => b.TotalPrice).HasColumnType("decimal(18,2)");
         builder.Property(b => b.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(b => b.RowVersion).IsRowVersion();
@@ -29,6 +30,8 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
             t.HasCheckConstraint("CK_Booking_AdultsCount", "[AdultsCount] >= 1");
             t.HasCheckConstraint("CK_Booking_ChildrenCount", "[ChildrenCount] >= 0");
             t.HasCheckConstraint("CK_Booking_TotalPrice", "[TotalPrice] >= 0");
+            t.HasCheckConstraint("CK_Booking_OriginalPrice",
+                "[OriginalPricePerNightSnapshot] >= [PricePerNightSnapshot]");
         });
     }
 }

@@ -11,6 +11,6 @@ public static class TestDbContextFactory
             .UseInMemoryDatabase($"HotelBookingTests_{Guid.NewGuid():N}")
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new TestApplicationDbContext(options);
     }
 }

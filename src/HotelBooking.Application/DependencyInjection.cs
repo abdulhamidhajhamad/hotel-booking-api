@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using HotelBooking.Application.Abstractions.Outbox;
 using HotelBooking.Application.Common.Messaging;
+using HotelBooking.Application.Features.Bookings.Invoice;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HotelBooking.Application;
@@ -33,6 +34,8 @@ public static class DependencyInjection
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
 
         services.AddScoped<IDispatcher, Dispatcher>();
+
+        services.AddScoped<InvoiceBuilder>();
 
         return services;
     }
