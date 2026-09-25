@@ -3,6 +3,7 @@ using HotelBooking.Application.Abstractions.Invoicing;
 using HotelBooking.Application.Abstractions.Outbox;
 using HotelBooking.Application.Features.Bookings.Common;
 using HotelBooking.Application.Features.Bookings.Invoice;
+using Microsoft.Extensions.Logging;
 
 namespace HotelBooking.Application.Features.Bookings.EventHandlers;
 
@@ -11,22 +12,30 @@ public sealed class SendInvoiceEmailHandler : IOutboxHandler<BookingConfirmedEve
     private readonly InvoiceBuilder _invoiceBuilder;
     private readonly IInvoiceRenderer _invoiceRenderer;
     private readonly IEmailSender _emailSender;
+    private readonly ILogger<SendInvoiceEmailHandler> _logger;
 
     public SendInvoiceEmailHandler(
         InvoiceBuilder invoiceBuilder,
         IInvoiceRenderer invoiceRenderer,
-        IEmailSender emailSender)
+        IEmailSender emailSender,
+        ILogger<SendInvoiceEmailHandler> logger)
     {
         _invoiceBuilder = invoiceBuilder;
         _invoiceRenderer = invoiceRenderer;
         _emailSender = emailSender;
+        _logger = logger;
     }
 
     public async Task HandleAsync(BookingConfirmedEvent integrationEvent, CancellationToken cancellationToken)
     {
         var invoice = await _invoiceBuilder.BuildAsync(integrationEvent.BookingGroupId, cancellationToken);
         if (invoice is null || string.IsNullOrWhiteSpace(invoice.GuestEmail))
+        {
+            _logger.LogWarning(
+                "Skipped invoice email for booking {BookingGroupId}: invoice or guest email missing",
+                integrationEvent.BookingGroupId);
             return;
+        }
 
         var pdf = _invoiceRenderer.RenderPdf(invoice);
 
