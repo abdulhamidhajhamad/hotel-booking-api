@@ -15,6 +15,7 @@ public sealed class RefreshTokenRotator : IRefreshTokenRotator
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IJwtTokenGenerator _tokenGenerator;
     private readonly IRefreshTokenIssuer _issuer;
+    private readonly IJtiBlacklist _blacklist;
     private readonly TimeProvider _timeProvider;
     private readonly IServiceScopeFactory _scopeFactory;
 
@@ -23,6 +24,7 @@ public sealed class RefreshTokenRotator : IRefreshTokenRotator
         UserManager<ApplicationUser> userManager,
         IJwtTokenGenerator tokenGenerator,
         IRefreshTokenIssuer issuer,
+        IJtiBlacklist blacklist,
         TimeProvider timeProvider,
         IServiceScopeFactory scopeFactory)
     {
@@ -30,6 +32,7 @@ public sealed class RefreshTokenRotator : IRefreshTokenRotator
         _userManager = userManager;
         _tokenGenerator = tokenGenerator;
         _issuer = issuer;
+        _blacklist = blacklist;
         _timeProvider = timeProvider;
         _scopeFactory = scopeFactory;
     }
@@ -49,7 +52,7 @@ public sealed class RefreshTokenRotator : IRefreshTokenRotator
 
         if (existing.IsRevoked)
         {
-            await NukeUserSessionsAsync(existing.UserId, now, cancellationToken);
+            await NukeUserSessionsAsync(existing.UserId, cancellationToken);
             return Result<RotatedTokens>.Failure(AuthErrors.RefreshTokenReused());
         }
 
@@ -71,21 +74,16 @@ public sealed class RefreshTokenRotator : IRefreshTokenRotator
         return new RotatedTokens(jwt.AccessToken, newRefresh.RawToken, jwt.ExpiresAt);
     }
 
-    private async Task NukeUserSessionsAsync(Guid userId, DateTimeOffset now, CancellationToken ct)
+    private async Task NukeUserSessionsAsync(Guid userId, CancellationToken ct)
     {
         using var scope = _scopeFactory.CreateScope();
+        var revoker = scope.ServiceProvider.GetRequiredService<IRefreshTokenRevoker>();
         var freshContext = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
 
-        var active = await freshContext.RefreshTokens
-            .Where(t => t.UserId == userId && !t.IsRevoked)
-            .ToListAsync(ct);
-
-        foreach (var t in active)
-        {
-            t.IsRevoked = true;
-            t.RevokedAt = now;
-        }
-
+        var revoked = await revoker.RevokeAllAsync(userId, ct);
         await freshContext.SaveChangesAsync(ct);
+
+        foreach (var t in revoked)
+            await _blacklist.AddAsync(t.Jti, t.AccessTokenExpiresAt, ct);
     }
 }
