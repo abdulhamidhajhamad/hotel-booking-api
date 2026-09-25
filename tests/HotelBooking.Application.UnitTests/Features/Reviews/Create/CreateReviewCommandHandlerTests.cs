@@ -71,6 +71,8 @@ public class CreateReviewCommandHandlerTests : IDisposable
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Rating.Should().Be(5);
+
+        _db.SaveChanges();
         _db.Reviews.Single().BookingId.Should().Be(booking.Id);
     }
 
