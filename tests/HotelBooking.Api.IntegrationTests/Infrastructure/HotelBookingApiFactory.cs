@@ -36,6 +36,7 @@ public sealed class HotelBookingApiFactory : WebApplicationFactory<Program>, IAs
         Environment.SetEnvironmentVariable(
             "REDIS_CONNECTION",
             _redis.GetConnectionString());
+
         Environment.SetEnvironmentVariable("JWT_ISSUER", "HotelBooking.Tests");
         Environment.SetEnvironmentVariable("JWT_AUDIENCE", "HotelBooking.Tests.Client");
         Environment.SetEnvironmentVariable(
@@ -43,6 +44,21 @@ public sealed class HotelBookingApiFactory : WebApplicationFactory<Program>, IAs
             "integration-test-signing-key-that-is-well-over-32-bytes-long-for-hs256");
         Environment.SetEnvironmentVariable("JWT_ACCESS_MINUTES", "15");
         Environment.SetEnvironmentVariable("JWT_REFRESH_MINUTES", "30");
+
+        Environment.SetEnvironmentVariable("CLOUDINARY_CLOUD_NAME", "test-cloud");
+        Environment.SetEnvironmentVariable("CLOUDINARY_API_KEY", "test-api-key");
+        Environment.SetEnvironmentVariable("CLOUDINARY_API_SECRET", "test-api-secret");
+
+        Environment.SetEnvironmentVariable("SMTP_HOST", "localhost");
+        Environment.SetEnvironmentVariable("SMTP_PORT", "1025");
+        Environment.SetEnvironmentVariable("SMTP_FROM_EMAIL", "no-reply@hotelbooking.test");
+
+        Environment.SetEnvironmentVariable(
+            "EMAIL_CONFIRM_URL_TEMPLATE",
+            "http://localhost:3000/confirm-email#token={token}");
+
+        Environment.SetEnvironmentVariable("STRIPE_SECRET_KEY", "sk_test_dummy");
+
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
     }
 

@@ -62,11 +62,6 @@ public sealed class AuthFlowTests
         refreshed!.AccessToken.Should().NotBeNullOrEmpty();
         refreshed.RefreshToken.Should().NotBe(loggedIn.RefreshToken);
 
-        var reuseResp = await client.PostAsJsonAsync(
-            "/api/v1/auth/refresh",
-            new RefreshCommand(loggedIn.RefreshToken));
-        reuseResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", refreshed.AccessToken);
 
@@ -75,6 +70,49 @@ public sealed class AuthFlowTests
 
         var replayResp = await client.PostAsync("/api/v1/auth/logout", content: null);
         replayResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task Refresh_WhenTokenReused_RevokesAllSessionsIncludingNewAccessToken()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N");
+        var email = $"reuse-{suffix}@test.com";
+        var userName = $"reuse{suffix[..8]}";
+        var password = "P@ssw0rd123!";
+
+        await client.PostAsJsonAsync(
+            "/api/v1/auth/register",
+            new RegisterCommand(email, userName, password));
+
+        var token = await ReadConfirmationTokenAsync(email);
+        token.Should().NotBeNullOrEmpty();
+
+        await client.PostAsJsonAsync(
+            "/api/v1/auth/confirm-email",
+            new ConfirmEmailCommand(token!));
+
+        var loginResp = await client.PostAsJsonAsync(
+            "/api/v1/auth/login",
+            new LoginCommand(email, password));
+        var loggedIn = await loginResp.Content.ReadFromJsonAsync<LoginResponse>();
+
+        var refreshResp = await client.PostAsJsonAsync(
+            "/api/v1/auth/refresh",
+            new RefreshCommand(loggedIn!.RefreshToken));
+        refreshResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var refreshed = await refreshResp.Content.ReadFromJsonAsync<RefreshResponse>();
+
+        var reuseResp = await client.PostAsJsonAsync(
+            "/api/v1/auth/refresh",
+            new RefreshCommand(loggedIn.RefreshToken));
+        reuseResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", refreshed!.AccessToken);
+
+        var protectedResp = await client.PostAsync("/api/v1/auth/logout", content: null);
+        protectedResp.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
