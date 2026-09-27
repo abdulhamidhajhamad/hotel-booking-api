@@ -19,7 +19,7 @@ public sealed class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
         var name = typeof(TRequest).Name;
         var stopwatch = Stopwatch.StartNew();
 
-        _logger.LogInformation("Handling {Operation}", name);
+        _logger.LogDebug("Handling {Operation}", name);
 
         try
         {

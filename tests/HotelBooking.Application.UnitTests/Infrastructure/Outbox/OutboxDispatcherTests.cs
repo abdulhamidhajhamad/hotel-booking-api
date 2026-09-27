@@ -1,6 +1,7 @@
 using System.Text.Json;
 using HotelBooking.Application.Abstractions.Outbox;
 using HotelBooking.Infrastructure.Outbox;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HotelBooking.Application.UnitTests.Infrastructure.Outbox;
@@ -21,7 +22,7 @@ public class OutboxDispatcherTests : IAsyncDisposable
     private OutboxDispatcher Build()
     {
         _provider = _services.BuildServiceProvider();
-        return new OutboxDispatcher(_registry, _provider);
+        return new OutboxDispatcher(_registry, _provider, NullLogger<OutboxDispatcher>.Instance);
     }
 
     public async ValueTask DisposeAsync()

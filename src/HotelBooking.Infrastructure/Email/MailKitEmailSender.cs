@@ -2,6 +2,7 @@ using HotelBooking.Application.Abstractions.Email;
 using HotelBooking.Infrastructure.Email.Options;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
@@ -10,10 +11,12 @@ namespace HotelBooking.Infrastructure.Email;
 public sealed class MailKitEmailSender : IEmailSender
 {
     private readonly SmtpOptions _options;
+    private readonly ILogger<MailKitEmailSender> _logger;
 
-    public MailKitEmailSender(IOptions<SmtpOptions> options)
+    public MailKitEmailSender(IOptions<SmtpOptions> options, ILogger<MailKitEmailSender> logger)
     {
         _options = options.Value;
+        _logger = logger;
     }
 
     public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
@@ -55,6 +58,10 @@ public sealed class MailKitEmailSender : IEmailSender
 
         await client.SendAsync(mime, cancellationToken);
         await client.DisconnectAsync(quit: true, cancellationToken);
+
+        _logger.LogInformation(
+            "Email sent to {Recipient} with subject {Subject}",
+            message.ToEmail, message.Subject);
     }
 
     private static string StripHtml(string html)
