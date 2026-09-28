@@ -25,7 +25,7 @@ using HotelBooking.Infrastructure.Payments.Options;
 using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage;
 using HotelBooking.Infrastructure.Storage.Options;
-
+using HotelBooking.Infrastructure.Bookings;
 namespace HotelBooking.Infrastructure;
 
 public static class DependencyInjection
@@ -151,7 +151,8 @@ public static class DependencyInjection
         services.AddScoped<IOutboxAdmin, OutboxAdmin>();
         services.AddScoped<IOutbox, OutboxWriter>();
         services.AddHostedService<OutboxProcessor>();
-
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new ExpiredHoldSweeperOptions()));
+        services.AddHostedService<ExpiredHoldSweeper>();
         return services;
     }
 }
