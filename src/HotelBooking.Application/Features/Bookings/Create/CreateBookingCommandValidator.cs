@@ -1,13 +1,12 @@
 using FluentValidation;
 
-namespace HotelBooking.Application.Features.Bookings.Checkout;
+namespace HotelBooking.Application.Features.Bookings.Create;
 
-public sealed class CheckoutCommandValidator : AbstractValidator<CheckoutCommand>
+public sealed class CreateBookingCommandValidator : AbstractValidator<CreateBookingCommand>
 {
-    public CheckoutCommandValidator()
+    public CreateBookingCommandValidator()
     {
         RuleFor(x => x.IdempotencyKey).NotEmpty().MaximumLength(100);
-        RuleFor(x => x.PaymentMethodId).NotEmpty();
         RuleFor(x => x.SpecialRequests).MaximumLength(1000);
         RuleFor(x => x.Rooms).NotEmpty();
 
@@ -24,7 +23,7 @@ public sealed class CheckoutCommandValidator : AbstractValidator<CheckoutCommand
             .WithMessage("The same room cannot be booked for overlapping date ranges in one request.");
     }
 
-    private static bool HaveNoOverlappingDatesPerRoom(IReadOnlyList<CheckoutRoomItem> rooms)
+    private static bool HaveNoOverlappingDatesPerRoom(IReadOnlyList<CreateBookingRoomItem> rooms)
     {
         foreach (var perRoom in rooms.GroupBy(r => r.RoomId))
         {

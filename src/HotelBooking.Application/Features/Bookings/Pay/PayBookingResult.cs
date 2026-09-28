@@ -1,6 +1,6 @@
-namespace HotelBooking.Application.Features.Bookings.Checkout;
+namespace HotelBooking.Application.Features.Bookings.Pay;
 
-public sealed record CheckoutResult(
+public sealed record PayBookingResult(
     Guid BookingGroupId,
     string ConfirmationNumber,
     string PaymentStatus,

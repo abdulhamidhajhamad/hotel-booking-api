@@ -1,6 +1,6 @@
-namespace HotelBooking.Application.Features.Bookings.Checkout;
+namespace HotelBooking.Application.Features.Bookings.Create;
 
-public sealed record CheckoutRoomItem(
+public sealed record CreateBookingRoomItem(
     Guid RoomId,
     DateOnly CheckInDate,
     DateOnly CheckOutDate,

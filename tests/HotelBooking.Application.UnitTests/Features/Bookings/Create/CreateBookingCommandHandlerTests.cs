@@ -1,22 +1,19 @@
-using HotelBooking.Application.Features.Bookings.Checkout;
-using HotelBooking.Application.Features.Bookings.Common;
+using HotelBooking.Application.Features.Bookings.Create;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
 
-namespace HotelBooking.Application.UnitTests.Features.Bookings.Checkout;
+namespace HotelBooking.Application.UnitTests.Features.Bookings.Create;
 
-public class CheckoutCommandHandlerTests : IDisposable
+public class CreateBookingCommandHandlerTests : IDisposable
 {
     private readonly ApplicationDbContext _db = TestDbContextFactory.Create();
-    private readonly FakePaymentGateway _gateway = new();
-    private readonly FakeOutbox _outbox = new();
     private readonly FakeCurrentUser _currentUser = FakeCurrentUser.SignedIn(Guid.NewGuid());
 
     public void Dispose() => _db.Dispose();
 
-    private CheckoutCommandHandler CreateSut() => new(_db, _gateway, _currentUser, _outbox);
+    private CreateBookingCommandHandler CreateSut() => new(_db, _currentUser);
 
     private Guid SeedRoom(decimal pricePerNight = 100m, bool isActive = true)
     {
@@ -35,18 +32,17 @@ public class CheckoutCommandHandlerTests : IDisposable
         return room.Id;
     }
 
-    private static CheckoutCommand CommandFor(Guid roomId, string key = "key-1", string? special = null) =>
+    private static CreateBookingCommand CommandFor(Guid roomId, string key = "key-1", string? special = null) =>
         new(
             IdempotencyKey: key,
-            PaymentMethodId: "pm_card_visa",
             SpecialRequests: special,
             Rooms: new[]
             {
-                new CheckoutRoomItem(roomId, new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 3), 2, 0)
+                new CreateBookingRoomItem(roomId, new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 3), 2, 0)
             });
 
     [Fact]
-    public async Task Handle_HappyPath_ConfirmsBookingAndEnqueuesEvent()
+    public async Task Handle_HappyPath_CreatesPendingHold()
     {
         var roomId = SeedRoom();
         var sut = CreateSut();
@@ -54,36 +50,15 @@ public class CheckoutCommandHandlerTests : IDisposable
         var result = await sut.Handle(CommandFor(roomId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.PaymentStatus.Should().Be("Succeeded");
         result.Value.TotalPrice.Should().Be(200m);
 
-        _db.Bookings.Single().Status.Should().Be(BookingStatus.Confirmed);
-        _db.Payments.Single().Status.Should().Be(PaymentStatus.Succeeded);
+        _db.Bookings.Single().Status.Should().Be(BookingStatus.Pending);
         _db.RoomAvailability.Count().Should().Be(2);
-        _outbox.Events.Should().ContainSingle(e => e is BookingConfirmedEvent);
-        _gateway.ConfirmCallCount.Should().Be(1);
+        _db.Payments.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Handle_WhenPaymentDeclined_CancelsBookingAndReleasesHolds()
-    {
-        var roomId = SeedRoom();
-        _gateway.ConfirmSucceeds = false;
-        var sut = CreateSut();
-
-        var result = await sut.Handle(CommandFor(roomId), CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("Booking.PaymentFailed");
-
-        _db.Bookings.Single().Status.Should().Be(BookingStatus.Cancelled);
-        _db.Payments.Single().Status.Should().Be(PaymentStatus.Failed);
-        _db.RoomAvailability.Should().BeEmpty();
-        _outbox.Events.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task Handle_WhenSameKeyReplayed_ReturnsSameResultWithoutChargingAgain()
+    public async Task Handle_WhenSameKeyReplayed_ReturnsSameHold()
     {
         var roomId = SeedRoom();
         var sut = CreateSut();
@@ -95,7 +70,6 @@ public class CheckoutCommandHandlerTests : IDisposable
         first.IsSuccess.Should().BeTrue();
         second.IsSuccess.Should().BeTrue();
         second.Value.BookingGroupId.Should().Be(first.Value.BookingGroupId);
-        _gateway.ConfirmCallCount.Should().Be(1);
         _db.BookingGroups.Count().Should().Be(1);
     }
 
@@ -135,7 +109,7 @@ public class CheckoutCommandHandlerTests : IDisposable
     public async Task Handle_WhenNotAuthenticated_ReturnsUnauthorized()
     {
         var roomId = SeedRoom();
-        var sut = new CheckoutCommandHandler(_db, _gateway, FakeCurrentUser.Anonymous(), _outbox);
+        var sut = new CreateBookingCommandHandler(_db, FakeCurrentUser.Anonymous());
 
         var result = await sut.Handle(CommandFor(roomId), CancellationToken.None);
 
