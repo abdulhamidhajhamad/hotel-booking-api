@@ -1,7 +1,8 @@
-using HotelBooking.Application.Features.Admin.Amenities.Update;
+﻿using HotelBooking.Application.Features.Admin.Amenities.Update;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.Amenities.Update;
 
@@ -14,7 +15,7 @@ public class UpdateAmenityCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_WhenAmenityNotFound_ReturnsNotFound()
     {
-        var sut = new UpdateAmenityCommandHandler(_db);
+        var sut = new UpdateAmenityCommandHandler(new AmenityRepository(_db));
 
         var result = await sut.Handle(
             new UpdateAmenityCommand(Guid.NewGuid(), Name: "Anything"),
@@ -32,7 +33,7 @@ public class UpdateAmenityCommandHandlerTests : IDisposable
         _db.Amenities.Add(target);
         _db.SaveChanges();
 
-        var sut = new UpdateAmenityCommandHandler(_db);
+        var sut = new UpdateAmenityCommandHandler(new AmenityRepository(_db));
 
         var result = await sut.Handle(
             new UpdateAmenityCommand(target.Id, Name: "pool"),
@@ -50,7 +51,7 @@ public class UpdateAmenityCommandHandlerTests : IDisposable
         _db.Amenities.Add(amenity);
         _db.SaveChanges();
 
-        var sut = new UpdateAmenityCommandHandler(_db);
+        var sut = new UpdateAmenityCommandHandler(new AmenityRepository(_db));
 
         var result = await sut.Handle(
             new UpdateAmenityCommand(amenity.Id, Name: "POOL"),

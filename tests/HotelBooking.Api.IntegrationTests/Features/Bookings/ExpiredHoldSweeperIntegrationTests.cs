@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using HotelBooking.Application.Features.Bookings.Common;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
@@ -43,7 +43,7 @@ public sealed class ExpiredHoldSweeperIntegrationTests
             var city = new City
             {
                 Name = $"City-{Guid.NewGuid():N}",
-                Country = "Testland",
+                Country = "TL",
                 Timezone = "UTC",
             };
 

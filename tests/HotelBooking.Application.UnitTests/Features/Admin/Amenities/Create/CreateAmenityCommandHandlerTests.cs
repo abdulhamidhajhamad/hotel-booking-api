@@ -1,7 +1,8 @@
-using HotelBooking.Application.Features.Admin.Amenities.Create;
+﻿using HotelBooking.Application.Features.Admin.Amenities.Create;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.Amenities.Create;
 
@@ -14,7 +15,7 @@ public class CreateAmenityCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_HappyPath_AddsAmenityAndReturnsDto()
     {
-        var sut = new CreateAmenityCommandHandler(_db);
+        var sut = new CreateAmenityCommandHandler(new AmenityRepository(_db));
 
         var result = await sut.Handle(
             new CreateAmenityCommand("  Pool  ", "pool-icon"),
@@ -31,7 +32,7 @@ public class CreateAmenityCommandHandlerTests : IDisposable
         _db.Amenities.Add(new Amenity { Name = "Pool" });
         _db.SaveChanges();
 
-        var sut = new CreateAmenityCommandHandler(_db);
+        var sut = new CreateAmenityCommandHandler(new AmenityRepository(_db));
 
         var result = await sut.Handle(
             new CreateAmenityCommand("POOL", null),
