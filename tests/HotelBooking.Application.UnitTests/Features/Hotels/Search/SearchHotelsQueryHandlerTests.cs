@@ -1,8 +1,9 @@
-using HotelBooking.Application.Features.Hotels.Search;
+﻿using HotelBooking.Application.Features.Hotels.Search;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.HotelSearch;
 
 namespace HotelBooking.Application.UnitTests.Features.Hotels.Search;
 
@@ -11,7 +12,7 @@ public class SearchHotelsQueryHandlerTests : IDisposable
     private readonly ApplicationDbContext _db = TestDbContextFactory.Create();
     private readonly SearchHotelsQueryHandler _sut;
 
-    public SearchHotelsQueryHandlerTests() => _sut = new SearchHotelsQueryHandler(_db);
+    public SearchHotelsQueryHandlerTests() => _sut = new SearchHotelsQueryHandler(new HotelSearchReader(_db));
 
     public void Dispose() => _db.Dispose();
 

@@ -26,6 +26,16 @@ using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage;
 using HotelBooking.Infrastructure.Storage.Options;
 using HotelBooking.Infrastructure.Bookings;
+using HotelBooking.Application.Features.Cities.GetTrending.Abstractions;
+using HotelBooking.Application.Features.Hotels.GetDetails.Abstractions;
+using HotelBooking.Application.Features.Hotels.GetFeaturedDeals.Abstractions;
+using HotelBooking.Application.Features.Hotels.RecentlyVisited.Abstractions;
+using HotelBooking.Application.Features.Hotels.Search.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.TrendingDestinations;
+using HotelBooking.Infrastructure.Persistence.Repositories.HotelDetails;
+using HotelBooking.Infrastructure.Persistence.Repositories.FeaturedDeals;
+using HotelBooking.Infrastructure.Persistence.Repositories.RecentlyVisitedHotels;
+using HotelBooking.Infrastructure.Persistence.Repositories.HotelSearch;
 using HotelBooking.Application.Features.Auth.Email.Abstractions;
 using HotelBooking.Infrastructure.Persistence.Repositories.EmailConfirmation;
 using HotelBooking.Application.Features.Admin.CityImages.Abstractions;
@@ -80,6 +90,12 @@ public static class DependencyInjection
                 .AddInterceptors(sp.GetRequiredService<OutboxSignalInterceptor>()));
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped<ITrendingDestinationsReader, TrendingDestinationsReader>();
+        services.AddScoped<IHotelDetailsReader, HotelDetailsReader>();
+        services.AddScoped<IFeaturedDealsReader, FeaturedDealsReader>();
+        services.AddScoped<IRecentlyVisitedHotelsReader, RecentlyVisitedHotelsReader>();
+        services.AddScoped<IHotelSearchReader, HotelSearchReader>();
 
         services.AddScoped<IEmailConfirmationRepository, EmailConfirmationRepository>();
 
