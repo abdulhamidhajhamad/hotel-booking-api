@@ -1,7 +1,8 @@
-using HotelBooking.Application.Features.Admin.HotelImages.SetPrimary;
+﻿using HotelBooking.Application.Features.Admin.HotelImages.SetPrimary;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.HotelImages;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.HotelImages.SetPrimary;
 
@@ -31,7 +32,7 @@ public class SetPrimaryHotelImageCommandHandlerTests
     public async Task Handle_WhenImageNotFound_ReturnsNotFound()
     {
         await using var db = TestDbContextFactory.Create();
-        var sut = new SetPrimaryHotelImageCommandHandler(db);
+        var sut = new SetPrimaryHotelImageCommandHandler(new HotelImageRepository(db));
 
         var result = await sut.Handle(
             new SetPrimaryHotelImageCommand(Guid.NewGuid(), Guid.NewGuid()),
@@ -46,7 +47,7 @@ public class SetPrimaryHotelImageCommandHandlerTests
     {
         await using var db = TestDbContextFactory.Create();
         var hotel = SeedHotelWithImages(db, out var oldPrimary, out var target);
-        var sut = new SetPrimaryHotelImageCommandHandler(db);
+        var sut = new SetPrimaryHotelImageCommandHandler(new HotelImageRepository(db));
 
         var result = await sut.Handle(
             new SetPrimaryHotelImageCommand(hotel.Id, target.Id),
@@ -63,7 +64,7 @@ public class SetPrimaryHotelImageCommandHandlerTests
     {
         await using var db = TestDbContextFactory.Create();
         var hotel = SeedHotelWithImages(db, out var primary, out _);
-        var sut = new SetPrimaryHotelImageCommandHandler(db);
+        var sut = new SetPrimaryHotelImageCommandHandler(new HotelImageRepository(db));
 
         var result = await sut.Handle(
             new SetPrimaryHotelImageCommand(hotel.Id, primary.Id),

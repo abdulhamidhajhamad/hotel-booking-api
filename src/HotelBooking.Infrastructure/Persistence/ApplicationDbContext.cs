@@ -9,7 +9,7 @@ using HotelBooking.Infrastructure.Outbox;
 namespace HotelBooking.Infrastructure.Persistence;
 
 public class ApplicationDbContext
-    : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>, IApplicationDbContext
+    : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>, IApplicationDbContext, IUnitOfWork
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 

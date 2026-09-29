@@ -1,25 +1,22 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Messaging;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.Hotels.Abstractions;
 using HotelBooking.Application.Features.Admin.Hotels.Common;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.Hotels.Update;
 
 public sealed class UpdateHotelCommandHandler
     : ICommandHandler<UpdateHotelCommand, HotelDetail>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IHotelRepository _hotels;
 
-    public UpdateHotelCommandHandler(IApplicationDbContext db) => _db = db;
+    public UpdateHotelCommandHandler(IHotelRepository hotels) => _hotels = hotels;
 
     public async Task<Result<HotelDetail>> Handle(
         UpdateHotelCommand command,
         CancellationToken cancellationToken)
     {
-        var hotel = await _db.Hotels
-            .Include(h => h.City)
-            .FirstOrDefaultAsync(h => h.Id == command.Id, cancellationToken);
+        var hotel = await _hotels.GetByIdWithCityAsync(command.Id, cancellationToken);
 
         if (hotel is null)
             return HotelErrors.NotFound(command.Id);
@@ -28,8 +25,7 @@ public sealed class UpdateHotelCommandHandler
 
         if (command.CityId.HasValue && command.CityId.Value != hotel.CityId)
         {
-            var newCity = await _db.Cities
-                .FirstOrDefaultAsync(c => c.Id == command.CityId.Value, cancellationToken);
+            var newCity = await _hotels.GetCityAsync(command.CityId.Value, cancellationToken);
 
             if (newCity is null)
                 return HotelErrors.CityNotFound(command.CityId.Value);
@@ -58,13 +54,9 @@ public sealed class UpdateHotelCommandHandler
                 ? null
                 : command.OwnerName.Trim();
 
-        var numberOfRooms = await _db.Rooms
-            .CountAsync(r => r.HotelId == hotel.Id, cancellationToken);
+        var numberOfRooms = await _hotels.CountRoomsAsync(hotel.Id, cancellationToken);
 
-        var primaryImageUrl = await _db.HotelImages
-            .Where(i => i.HotelId == hotel.Id && i.IsPrimary)
-            .Select(i => i.Url)
-            .FirstOrDefaultAsync(cancellationToken);
+        var primaryImageUrl = await _hotels.GetPrimaryImageUrlAsync(hotel.Id, cancellationToken);
 
         return new HotelDetail(
             hotel.Id,

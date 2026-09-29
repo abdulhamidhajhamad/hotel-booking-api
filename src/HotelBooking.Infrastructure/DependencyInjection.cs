@@ -26,6 +26,16 @@ using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage;
 using HotelBooking.Infrastructure.Storage.Options;
 using HotelBooking.Infrastructure.Bookings;
+using HotelBooking.Application.Features.Admin.CityImages.Abstractions;
+using HotelBooking.Application.Features.Admin.HotelImages.Abstractions;
+using HotelBooking.Application.Features.Admin.RoomImages.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.CityImages;
+using HotelBooking.Infrastructure.Persistence.Repositories.HotelImages;
+using HotelBooking.Infrastructure.Persistence.Repositories.RoomImages;
+using HotelBooking.Application.Features.Admin.Rooms.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.Rooms;
+using HotelBooking.Application.Features.Admin.Hotels.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.Hotels;
 using HotelBooking.Application.Features.Admin.Discounts.Abstractions;
 using HotelBooking.Infrastructure.Persistence.Repositories.Discounts;
 using HotelBooking.Application.Features.Admin.RoomTypes.Abstractions;
@@ -68,6 +78,18 @@ public static class DependencyInjection
                 .AddInterceptors(sp.GetRequiredService<OutboxSignalInterceptor>()));
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped<ICityImageRepository, CityImageRepository>();
+        services.AddScoped<IHotelImageRepository, HotelImageRepository>();
+        services.AddScoped<IRoomImageRepository, RoomImageRepository>();
+
+        services.AddScoped<IRoomRepository, RoomRepository>();
+        services.AddScoped<IRoomReader, RoomReader>();
+
+        services.AddScoped<IHotelRepository, HotelRepository>();
+        services.AddScoped<IHotelReader, HotelReader>();
 
         services.AddScoped<IDiscountRepository, DiscountRepository>();
         services.AddScoped<IDiscountReader, DiscountReader>();

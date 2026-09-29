@@ -1,26 +1,23 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Messaging;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.Hotels.Abstractions;
 using HotelBooking.Application.Features.Admin.Hotels.Common;
 using HotelBooking.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.Hotels.Create;
 
 public sealed class CreateHotelCommandHandler
     : ICommandHandler<CreateHotelCommand, HotelDetail>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IHotelRepository _hotels;
 
-    public CreateHotelCommandHandler(IApplicationDbContext db) => _db = db;
+    public CreateHotelCommandHandler(IHotelRepository hotels) => _hotels = hotels;
 
     public async Task<Result<HotelDetail>> Handle(
         CreateHotelCommand command,
         CancellationToken cancellationToken)
     {
-        var city = await _db.Cities
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == command.CityId, cancellationToken);
+        var city = await _hotels.GetCitySummaryAsync(command.CityId, cancellationToken);
 
         if (city is null)
             return HotelErrors.CityNotFound(command.CityId);
@@ -38,7 +35,7 @@ public sealed class CreateHotelCommandHandler
             OwnerName = string.IsNullOrWhiteSpace(command.OwnerName) ? null : command.OwnerName!.Trim(),
         };
 
-        await _db.Hotels.AddAsync(hotel, cancellationToken);
+        _hotels.Add(hotel);
 
         return new HotelDetail(
             hotel.Id,

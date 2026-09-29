@@ -1,9 +1,10 @@
-using HotelBooking.Application.Abstractions.Storage;
+﻿using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Common.Storage;
 using HotelBooking.Application.Features.Admin.HotelImages.Upload;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.HotelImages;
 using Microsoft.Extensions.Logging;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.HotelImages.Upload;
@@ -38,7 +39,7 @@ public class UploadHotelImagesCommandHandlerTests
     public async Task Handle_WhenHotelNotFound_ReturnsValidationError()
     {
         await using var db = TestDbContextFactory.Create();
-        var sut = new UploadHotelImagesCommandHandler(db, _storage, _logger);
+        var sut = new UploadHotelImagesCommandHandler(new HotelImageRepository(db), db, _storage, _logger);
 
         var result = await sut.Handle(
             new UploadHotelImagesCommand(Guid.NewGuid(), new[] { FakeFile() }),
@@ -57,7 +58,7 @@ public class UploadHotelImagesCommandHandlerTests
         _storage.UploadAsync(Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(_ => new StoredImage($"https://cdn/{Guid.NewGuid():N}", Guid.NewGuid().ToString("N")));
 
-        var sut = new UploadHotelImagesCommandHandler(db, _storage, _logger);
+        var sut = new UploadHotelImagesCommandHandler(new HotelImageRepository(db), db, _storage, _logger);
 
         var result = await sut.Handle(
             new UploadHotelImagesCommand(hotel.Id, new[] { FakeFile(), FakeFile(), FakeFile() }),
@@ -86,7 +87,7 @@ public class UploadHotelImagesCommandHandlerTests
         _storage.UploadAsync(Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(_ => new StoredImage($"https://cdn/{Guid.NewGuid():N}", Guid.NewGuid().ToString("N")));
 
-        var sut = new UploadHotelImagesCommandHandler(db, _storage, _logger);
+        var sut = new UploadHotelImagesCommandHandler(new HotelImageRepository(db), db, _storage, _logger);
 
         var result = await sut.Handle(
             new UploadHotelImagesCommand(hotel.Id, new[] { FakeFile(), FakeFile() }),
@@ -104,7 +105,7 @@ public class UploadHotelImagesCommandHandlerTests
         _storage.UploadAsync(Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new StoredImage("https://cdn/x", "px"));
 
-        var sut = new UploadHotelImagesCommandHandler(db, _storage, _logger);
+        var sut = new UploadHotelImagesCommandHandler(new HotelImageRepository(db), db, _storage, _logger);
 
         await sut.Handle(
             new UploadHotelImagesCommand(hotel.Id, new[] { FakeFile(), FakeFile() }),
