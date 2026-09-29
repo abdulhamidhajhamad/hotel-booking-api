@@ -1,29 +1,32 @@
-using HotelBooking.Application.Abstractions;
+﻿using HotelBooking.Application.Abstractions;
 using HotelBooking.Application.Abstractions.Outbox;
 using HotelBooking.Application.Abstractions.Payments;
 using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
 using HotelBooking.Application.Features.Bookings.Common;
+using HotelBooking.Application.Features.Bookings.Pay.Abstractions;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Bookings.Pay;
 
 public sealed class PayBookingCommandHandler : ICommandHandler<PayBookingCommand, PayBookingResult>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IPayBookingRepository _bookings;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IPaymentGateway _paymentGateway;
     private readonly ICurrentUser _currentUser;
     private readonly IOutbox _outbox;
 
     public PayBookingCommandHandler(
-        IApplicationDbContext db,
+        IPayBookingRepository bookings,
+        IUnitOfWork unitOfWork,
         IPaymentGateway paymentGateway,
         ICurrentUser currentUser,
         IOutbox outbox)
     {
-        _db = db;
+        _bookings = bookings;
+        _unitOfWork = unitOfWork;
         _paymentGateway = paymentGateway;
         _currentUser = currentUser;
         _outbox = outbox;
@@ -36,10 +39,7 @@ public sealed class PayBookingCommandHandler : ICommandHandler<PayBookingCommand
         if (_currentUser.Id is not { } userId)
             return Result<PayBookingResult>.Failure(BookingErrors.NotAuthenticated());
 
-        var group = await _db.BookingGroups
-            .Include(g => g.Bookings)
-            .Include(g => g.Payments)
-            .FirstOrDefaultAsync(g => g.Id == command.BookingGroupId, cancellationToken);
+        var group = await _bookings.GetGroupWithBookingsAndPaymentsAsync(command.BookingGroupId, cancellationToken);
 
         if (group is null)
             return Result<PayBookingResult>.Failure(BookingErrors.BookingGroupNotFound(command.BookingGroupId));
@@ -68,7 +68,7 @@ public sealed class PayBookingCommandHandler : ICommandHandler<PayBookingCommand
             IdempotencyKey = idempotencyKey,
             Status = PaymentStatus.Pending,
         };
-        _db.Payments.Add(payment);
+        _bookings.AddPayment(payment);
 
         var intent = await _paymentGateway.CreateIntentAsync(
             new CreatePaymentIntentRequest(
@@ -76,7 +76,7 @@ public sealed class PayBookingCommandHandler : ICommandHandler<PayBookingCommand
             cancellationToken);
 
         payment.ProviderTransactionId = intent.PaymentIntentId;
-        await _db.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var confirmation = await _paymentGateway.ConfirmIntentAsync(
             new ConfirmPaymentIntentRequest(
@@ -102,13 +102,10 @@ public sealed class PayBookingCommandHandler : ICommandHandler<PayBookingCommand
                 booking.Status = BookingStatus.Cancelled;
 
             var bookingIds = group.Bookings.Select(b => b.Id).ToList();
-            var holds = await _db.RoomAvailability
-                .Where(a => a.BookingId != null && bookingIds.Contains(a.BookingId.Value))
-                .ToListAsync(cancellationToken);
-            _db.RoomAvailability.RemoveRange(holds);
+            await _bookings.RemoveHoldsForBookingsAsync(bookingIds, cancellationToken);
         }
 
-        await _db.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return confirmation.Succeeded
             ? Result<PayBookingResult>.Success(new PayBookingResult(
