@@ -1,26 +1,26 @@
-using HotelBooking.Application.Abstractions;
+﻿using HotelBooking.Application.Abstractions;
 using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Reviews.Abstractions;
 using HotelBooking.Application.Features.Reviews.Common;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Reviews.Create;
 
 public sealed class CreateReviewCommandHandler
     : ICommandHandler<CreateReviewCommand, ReviewDto>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IReviewRepository _reviews;
     private readonly ICurrentUser _currentUser;
     private readonly TimeProvider _clock;
 
     public CreateReviewCommandHandler(
-        IApplicationDbContext db,
+        IReviewRepository reviews,
         ICurrentUser currentUser,
         TimeProvider clock)
     {
-        _db = db;
+        _reviews = reviews;
         _currentUser = currentUser;
         _clock = clock;
     }
@@ -32,16 +32,7 @@ public sealed class CreateReviewCommandHandler
         if (_currentUser.Id is not { } userId)
             return ReviewErrors.NotAuthenticated();
 
-        var booking = await _db.Bookings
-            .Where(b => b.Id == command.BookingId)
-            .Select(b => new
-            {
-                OwnerId = b.BookingGroup.UserId,
-                HotelId = b.Room.HotelId,
-                b.Status,
-                b.CheckOutDate
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+        var booking = await _reviews.GetBookingForReviewAsync(command.BookingId, cancellationToken);
 
         if (booking is null)
             return ReviewErrors.BookingNotFound(command.BookingId);
@@ -54,16 +45,12 @@ public sealed class CreateReviewCommandHandler
         if (booking.Status != BookingStatus.Confirmed || booking.CheckOutDate >= today)
             return ReviewErrors.StayNotCompleted();
 
-        var alreadyReviewed = await _db.Reviews
-            .AnyAsync(r => r.BookingId == command.BookingId, cancellationToken);
+        var alreadyReviewed = await _reviews.HasReviewAsync(command.BookingId, cancellationToken);
 
         if (alreadyReviewed)
             return ReviewErrors.AlreadyReviewed();
 
-        var reviewerName = await _db.Users
-            .Where(u => u.Id == userId)
-            .Select(u => u.FullName)
-            .FirstOrDefaultAsync(cancellationToken);
+        var reviewerName = await _reviews.GetReviewerNameAsync(userId, cancellationToken);
 
         var review = new Review
         {
@@ -74,7 +61,7 @@ public sealed class CreateReviewCommandHandler
             Comment = string.IsNullOrWhiteSpace(command.Comment) ? null : command.Comment.Trim(),
         };
 
-        await _db.Reviews.AddAsync(review, cancellationToken);
+        _reviews.Add(review);
 
         return new ReviewDto(
             review.Id,

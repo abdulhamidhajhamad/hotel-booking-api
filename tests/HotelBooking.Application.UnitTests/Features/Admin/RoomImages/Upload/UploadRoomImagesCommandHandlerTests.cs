@@ -1,15 +1,19 @@
-using HotelBooking.Application.Abstractions.Storage;
+﻿using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Common.Storage;
 using HotelBooking.Application.Features.Admin.RoomImages.Upload;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.RoomImages;
+using Microsoft.Extensions.Logging;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.RoomImages.Upload;
 
 public class UploadRoomImagesCommandHandlerTests
 {
     private readonly IImageStorage _storage = Substitute.For<IImageStorage>();
+    private readonly ILogger<UploadRoomImagesCommandHandler> _logger =
+        Substitute.For<ILogger<UploadRoomImagesCommandHandler>>();
 
     private static UploadImageFile FakeFile() =>
         new(new MemoryStream(new byte[] { 1, 2, 3 }), "image/jpeg", "r.jpg");
@@ -53,7 +57,7 @@ public class UploadRoomImagesCommandHandlerTests
     public async Task Handle_WhenRoomNotFoundUnderHotel_ReturnsValidationError()
     {
         await using var db = TestDbContextFactory.Create();
-        var sut = new UploadRoomImagesCommandHandler(db, _storage);
+        var sut = new UploadRoomImagesCommandHandler(new RoomImageRepository(db), db, _storage, _logger);
 
         var result = await sut.Handle(
             new UploadRoomImagesCommand(Guid.NewGuid(), Guid.NewGuid(), new[] { FakeFile() }),
@@ -72,7 +76,7 @@ public class UploadRoomImagesCommandHandlerTests
         _storage.UploadAsync(Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(_ => new StoredImage($"https://cdn/{Guid.NewGuid():N}", Guid.NewGuid().ToString("N")));
 
-        var sut = new UploadRoomImagesCommandHandler(db, _storage);
+        var sut = new UploadRoomImagesCommandHandler(new RoomImageRepository(db), db, _storage, _logger);
 
         var result = await sut.Handle(
             new UploadRoomImagesCommand(room.HotelId, room.Id, new[] { FakeFile(), FakeFile() }),
@@ -90,7 +94,7 @@ public class UploadRoomImagesCommandHandlerTests
         _storage.UploadAsync(Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new StoredImage("u", "p"));
 
-        var sut = new UploadRoomImagesCommandHandler(db, _storage);
+        var sut = new UploadRoomImagesCommandHandler(new RoomImageRepository(db), db, _storage, _logger);
 
         await sut.Handle(
             new UploadRoomImagesCommand(room.HotelId, room.Id, new[] { FakeFile() }),

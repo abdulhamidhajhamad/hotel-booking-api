@@ -1,5 +1,5 @@
 ﻿using System.Security.Cryptography;
-using HotelBooking.Application.Abstractions;
+using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Application.Features.Auth.Abstractions;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Application.Common.Options;

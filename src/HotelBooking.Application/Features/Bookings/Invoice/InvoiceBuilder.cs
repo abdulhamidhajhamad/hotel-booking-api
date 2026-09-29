@@ -1,50 +1,16 @@
-using HotelBooking.Application.Abstractions;
-using Microsoft.EntityFrameworkCore;
+﻿using HotelBooking.Application.Features.Bookings.Invoice.Abstractions;
 
 namespace HotelBooking.Application.Features.Bookings.Invoice;
 
 public sealed class InvoiceBuilder
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IInvoiceReader _reader;
 
-    public InvoiceBuilder(IApplicationDbContext db) => _db = db;
+    public InvoiceBuilder(IInvoiceReader reader) => _reader = reader;
 
     public async Task<InvoiceModel?> BuildAsync(Guid bookingGroupId, CancellationToken cancellationToken)
     {
-        var group = await _db.BookingGroups
-            .AsNoTracking()
-            .IgnoreQueryFilters()
-            .Where(g => g.Id == bookingGroupId)
-            .Select(g => new
-            {
-                g.Id,
-                g.ConfirmationNumber,
-                g.TotalPrice,
-                g.CreatedAt,
-                GuestName = g.User.FullName ?? g.User.UserName,
-                GuestEmail = g.User.Email,
-                PaymentStatus = g.Payments
-                    .OrderByDescending(p => p.CreatedAt)
-                    .Select(p => p.Status)
-                    .FirstOrDefault(),
-                Currency = g.Payments
-                    .OrderByDescending(p => p.CreatedAt)
-                    .Select(p => p.Currency)
-                    .FirstOrDefault(),
-                Lines = g.Bookings.Select(b => new
-                {
-                    HotelName = b.Room.Hotel.Name,
-                    HotelAddress = b.Room.Hotel.Address,
-                    RoomNumber = b.Room.Number,
-                    RoomType = b.Room.RoomType.Name,
-                    b.CheckInDate,
-                    b.CheckOutDate,
-                    b.OriginalPricePerNightSnapshot,
-                    b.PricePerNightSnapshot,
-                    b.TotalPrice
-                }).ToList()
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+        var group = await _reader.GetInvoiceDataAsync(bookingGroupId, cancellationToken);
 
         if (group is null)
             return null;

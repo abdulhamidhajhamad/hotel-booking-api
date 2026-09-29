@@ -37,4 +37,14 @@ public static class BookingErrors
 
     public static Error InvoiceForbidden() =>
         Error.Forbidden("Booking.InvoiceForbidden", "You are not allowed to access this invoice.");
+
+    public static Error BookingForbidden() =>
+        Error.Forbidden("Booking.Forbidden", "You are not allowed to pay for this booking.");
+
+    public static Error BookingNotPending() =>
+        Error.Conflict("Booking.NotPending", "This booking is no longer awaiting payment.");
+
+    public static Error HoldExpired() =>
+        Error.Conflict("Booking.HoldExpired",
+            "The hold on these rooms has expired. Please start a new booking.");
 }

@@ -25,7 +25,46 @@ using HotelBooking.Infrastructure.Payments.Options;
 using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage;
 using HotelBooking.Infrastructure.Storage.Options;
-
+using HotelBooking.Infrastructure.Bookings;
+using HotelBooking.Application.Common.Messaging;
+using HotelBooking.Application.Features.Bookings.Create.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.CreateBooking;
+using HotelBooking.Application.Features.Bookings.Pay.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.PayBooking;
+using HotelBooking.Application.Features.Bookings.Invoice.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.Invoices;
+using HotelBooking.Application.Features.Reviews.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.Reviews;
+using HotelBooking.Application.Features.Cities.GetTrending.Abstractions;
+using HotelBooking.Application.Features.Hotels.GetDetails.Abstractions;
+using HotelBooking.Application.Features.Hotels.GetFeaturedDeals.Abstractions;
+using HotelBooking.Application.Features.Hotels.RecentlyVisited.Abstractions;
+using HotelBooking.Application.Features.Hotels.Search.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.TrendingDestinations;
+using HotelBooking.Infrastructure.Persistence.Repositories.HotelDetails;
+using HotelBooking.Infrastructure.Persistence.Repositories.FeaturedDeals;
+using HotelBooking.Infrastructure.Persistence.Repositories.RecentlyVisitedHotels;
+using HotelBooking.Infrastructure.Persistence.Repositories.HotelSearch;
+using HotelBooking.Application.Features.Auth.Email.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.EmailConfirmation;
+using HotelBooking.Application.Features.Admin.CityImages.Abstractions;
+using HotelBooking.Application.Features.Admin.HotelImages.Abstractions;
+using HotelBooking.Application.Features.Admin.RoomImages.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.CityImages;
+using HotelBooking.Infrastructure.Persistence.Repositories.HotelImages;
+using HotelBooking.Infrastructure.Persistence.Repositories.RoomImages;
+using HotelBooking.Application.Features.Admin.Rooms.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.Rooms;
+using HotelBooking.Application.Features.Admin.Hotels.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.Hotels;
+using HotelBooking.Application.Features.Admin.Discounts.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.Discounts;
+using HotelBooking.Application.Features.Admin.RoomTypes.Abstractions;
+using HotelBooking.Application.Features.Admin.Cities.Abstractions;
+using HotelBooking.Infrastructure.Persistence.Repositories.Amenities;
+using HotelBooking.Infrastructure.Persistence.Repositories.Cities;
+using HotelBooking.Infrastructure.Persistence.Repositories.RoomTypes;
+using HotelBooking.Application.Features.Admin.Amenities.Abstractions;
 namespace HotelBooking.Infrastructure;
 
 public static class DependencyInjection
@@ -60,6 +99,49 @@ public static class DependencyInjection
                 .AddInterceptors(sp.GetRequiredService<OutboxSignalInterceptor>()));
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped<ICreateBookingRepository, CreateBookingRepository>();
+
+        services.AddScoped<IPayBookingRepository, PayBookingRepository>();
+
+        services.AddScoped<IInvoiceReader, InvoiceReader>();
+
+        services.AddScoped<IReviewRepository, ReviewRepository>();
+        services.AddScoped<IReviewReader, ReviewReader>();
+
+        services.AddScoped<ITrendingDestinationsReader, TrendingDestinationsReader>();
+        services.AddScoped<IHotelDetailsReader, HotelDetailsReader>();
+        services.AddScoped<IFeaturedDealsReader, FeaturedDealsReader>();
+        services.AddScoped<IRecentlyVisitedHotelsReader, RecentlyVisitedHotelsReader>();
+        services.AddScoped<IHotelSearchReader, HotelSearchReader>();
+
+        services.AddScoped<IEmailConfirmationRepository, EmailConfirmationRepository>();
+
+        services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
+
+        services.AddScoped<ICityImageRepository, CityImageRepository>();
+        services.AddScoped<IHotelImageRepository, HotelImageRepository>();
+        services.AddScoped<IRoomImageRepository, RoomImageRepository>();
+
+        services.AddScoped<IRoomRepository, RoomRepository>();
+        services.AddScoped<IRoomReader, RoomReader>();
+
+        services.AddScoped<IHotelRepository, HotelRepository>();
+        services.AddScoped<IHotelReader, HotelReader>();
+
+        services.AddScoped<IDiscountRepository, DiscountRepository>();
+        services.AddScoped<IDiscountReader, DiscountReader>();
+
+        services.AddScoped<IRoomTypeRepository, RoomTypeRepository>();
+        services.AddScoped<IRoomTypeReader, RoomTypeReader>();
+
+        services.AddScoped<ICityRepository, CityRepository>();
+        services.AddScoped<ICityReader, CityReader>();
+
+        services.AddScoped<IAmenityRepository, AmenityRepository>();
+        services.AddScoped<IAmenityReader, AmenityReader>();
 
         services
             .AddIdentityCore<ApplicationUser>(options =>
@@ -151,7 +233,8 @@ public static class DependencyInjection
         services.AddScoped<IOutboxAdmin, OutboxAdmin>();
         services.AddScoped<IOutbox, OutboxWriter>();
         services.AddHostedService<OutboxProcessor>();
-
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new ExpiredHoldSweeperOptions()));
+        services.AddHostedService<ExpiredHoldSweeper>();
         return services;
     }
 }

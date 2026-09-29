@@ -1,8 +1,9 @@
-using HotelBooking.Application.Features.Hotels.RecentlyVisited;
+﻿using HotelBooking.Application.Features.Hotels.RecentlyVisited;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.RecentlyVisitedHotels;
 
 namespace HotelBooking.Application.UnitTests.Features.Hotels.RecentlyVisited;
 
@@ -13,14 +14,14 @@ public class GetRecentlyVisitedHotelsQueryHandlerTests : IDisposable
     private readonly GetRecentlyVisitedHotelsQueryHandler _sut;
 
     public GetRecentlyVisitedHotelsQueryHandlerTests()
-        => _sut = new GetRecentlyVisitedHotelsQueryHandler(_db, _currentUser);
+        => _sut = new GetRecentlyVisitedHotelsQueryHandler(new RecentlyVisitedHotelsReader(_db), _currentUser);
 
     public void Dispose() => _db.Dispose();
 
     [Fact]
     public async Task Handle_WhenNotAuthenticated_ReturnsUnauthorized()
     {
-        var sut = new GetRecentlyVisitedHotelsQueryHandler(_db, FakeCurrentUser.Anonymous());
+        var sut = new GetRecentlyVisitedHotelsQueryHandler(new RecentlyVisitedHotelsReader(_db), FakeCurrentUser.Anonymous());
 
         var result = await sut.Handle(new GetRecentlyVisitedHotelsQuery(), CancellationToken.None);
 

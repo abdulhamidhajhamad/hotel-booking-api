@@ -1,20 +1,19 @@
 ﻿using System.Security.Cryptography;
-using HotelBooking.Application.Abstractions;
 using HotelBooking.Application.Common.Errors;
 using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
-using Microsoft.EntityFrameworkCore;
+using HotelBooking.Application.Features.Auth.Email.Abstractions;
 
 namespace HotelBooking.Application.Features.Auth.ConfirmEmail;
 
 public sealed class ConfirmEmailCommandHandler : ICommandHandler<ConfirmEmailCommand>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IEmailConfirmationRepository _emailConfirmation;
     private readonly TimeProvider _clock;
 
-    public ConfirmEmailCommandHandler(IApplicationDbContext db, TimeProvider clock)
+    public ConfirmEmailCommandHandler(IEmailConfirmationRepository emailConfirmation, TimeProvider clock)
     {
-        _db = db;
+        _emailConfirmation = emailConfirmation;
         _clock = clock;
     }
 
@@ -33,9 +32,7 @@ public sealed class ConfirmEmailCommandHandler : ICommandHandler<ConfirmEmailCom
         var hash = Convert.ToBase64String(SHA256.HashData(rawBytes));
         var now = _clock.GetUtcNow();
 
-        var token = await _db.EmailConfirmationTokens
-            .Include(t => t.User)
-            .FirstOrDefaultAsync(t => t.TokenHash == hash, cancellationToken);
+        var token = await _emailConfirmation.GetTokenWithUserByHashAsync(hash, cancellationToken);
 
         if (token is null
             || token.UsedAtUtc is not null

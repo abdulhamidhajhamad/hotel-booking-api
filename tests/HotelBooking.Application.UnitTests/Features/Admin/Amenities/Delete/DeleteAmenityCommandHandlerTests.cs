@@ -1,7 +1,8 @@
-using HotelBooking.Application.Features.Admin.Amenities.Delete;
+﻿using HotelBooking.Application.Features.Admin.Amenities.Delete;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.Amenities;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.Amenities.Delete;
@@ -15,7 +16,7 @@ public class DeleteAmenityCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_WhenAmenityNotFound_ReturnsNotFound()
     {
-        var sut = new DeleteAmenityCommandHandler(_db);
+        var sut = new DeleteAmenityCommandHandler(new AmenityRepository(_db));
 
         var result = await sut.Handle(
             new DeleteAmenityCommand(Guid.NewGuid()),
@@ -32,7 +33,7 @@ public class DeleteAmenityCommandHandlerTests : IDisposable
         _db.Amenities.Add(amenity);
         _db.SaveChanges();
 
-        var sut = new DeleteAmenityCommandHandler(_db);
+        var sut = new DeleteAmenityCommandHandler(new AmenityRepository(_db));
 
         var result = await sut.Handle(
             new DeleteAmenityCommand(amenity.Id),

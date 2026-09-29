@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using HotelBooking.Application.Abstractions;
+using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Application.Common.Errors;
 using HotelBooking.Application.Common.Results;
 using HotelBooking.Application.Features.Auth.Abstractions;

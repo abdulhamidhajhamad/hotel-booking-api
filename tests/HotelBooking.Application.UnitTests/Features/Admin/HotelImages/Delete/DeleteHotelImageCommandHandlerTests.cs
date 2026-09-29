@@ -1,8 +1,9 @@
-using HotelBooking.Application.Abstractions.Storage;
+﻿using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Features.Admin.HotelImages.Delete;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.HotelImages;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.HotelImages.Delete;
@@ -12,7 +13,7 @@ public class DeleteHotelImageCommandHandlerTests
     private readonly IImageStorage _storage = Substitute.For<IImageStorage>();
 
     private DeleteHotelImageCommandHandler CreateSut(ApplicationDbContext db)
-        => new(db, _storage, NullLogger<DeleteHotelImageCommandHandler>.Instance);
+        => new(new HotelImageRepository(db), _storage, NullLogger<DeleteHotelImageCommandHandler>.Instance);
 
     private static Hotel SeedHotel(ApplicationDbContext db)
     {

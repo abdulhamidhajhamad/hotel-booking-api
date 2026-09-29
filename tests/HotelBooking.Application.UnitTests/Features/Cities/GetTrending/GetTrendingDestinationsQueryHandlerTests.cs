@@ -1,8 +1,9 @@
-using HotelBooking.Application.Features.Cities.GetTrending;
+﻿using HotelBooking.Application.Features.Cities.GetTrending;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.TrendingDestinations;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace HotelBooking.Application.UnitTests.Features.Cities.GetTrending;
@@ -14,7 +15,7 @@ public class GetTrendingDestinationsQueryHandlerTests : IDisposable
     private readonly GetTrendingDestinationsQueryHandler _sut;
 
     public GetTrendingDestinationsQueryHandlerTests()
-        => _sut = new GetTrendingDestinationsQueryHandler(_db, _cache);
+        => _sut = new GetTrendingDestinationsQueryHandler(new TrendingDestinationsReader(_db), _cache);
 
     public void Dispose()
     {

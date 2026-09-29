@@ -1,4 +1,4 @@
-using HotelBooking.Application.Common.Errors;
+﻿using HotelBooking.Application.Common.Errors;
 using HotelBooking.Application.Common.Results;
 using HotelBooking.Application.Features.Admin.Users.Common;
 using HotelBooking.Application.Features.Auth.Abstractions;
@@ -20,7 +20,7 @@ public sealed class AdminUserCreator : IAdminUserCreator
         _roleManager = roleManager;
     }
 
-    public async Task<Result<Guid>> CreateAsync(
+    public async Task<Result<AdminUserDto>> CreateAsync(
         string email,
         string userName,
         string password,
@@ -31,13 +31,13 @@ public sealed class AdminUserCreator : IAdminUserCreator
         var normalizedUserName = userName.Trim();
 
         if (!await _roleManager.RoleExistsAsync(role))
-            return Result<Guid>.Failure(AdminUserErrors.InvalidRole(role));
+            return Result<AdminUserDto>.Failure(AdminUserErrors.InvalidRole(role));
 
         if (await _userManager.FindByEmailAsync(normalizedEmail) is not null)
-            return Result<Guid>.Failure(AuthErrors.EmailAlreadyRegistered(normalizedEmail));
+            return Result<AdminUserDto>.Failure(AuthErrors.EmailAlreadyRegistered(normalizedEmail));
 
         if (await _userManager.FindByNameAsync(normalizedUserName) is not null)
-            return Result<Guid>.Failure(AuthErrors.UsernameAlreadyTaken(normalizedUserName));
+            return Result<AdminUserDto>.Failure(AuthErrors.UsernameAlreadyTaken(normalizedUserName));
 
         var user = new ApplicationUser
         {
@@ -50,16 +50,21 @@ public sealed class AdminUserCreator : IAdminUserCreator
         if (!createResult.Succeeded)
         {
             var reason = string.Join("; ", createResult.Errors.Select(e => e.Description));
-            return Result<Guid>.Failure(AdminUserErrors.CreationFailed(reason));
+            return Result<AdminUserDto>.Failure(AdminUserErrors.CreationFailed(reason));
         }
 
         var roleResult = await _userManager.AddToRoleAsync(user, role);
         if (!roleResult.Succeeded)
         {
             var reason = string.Join("; ", roleResult.Errors.Select(e => e.Description));
-            return Result<Guid>.Failure(AdminUserErrors.CreationFailed(reason));
+            return Result<AdminUserDto>.Failure(AdminUserErrors.CreationFailed(reason));
         }
 
-        return Result<Guid>.Success(user.Id);
+        return Result<AdminUserDto>.Success(new AdminUserDto(
+            user.Id,
+            user.Email!,
+            user.UserName!,
+            role,
+            user.CreatedAt));
     }
 }

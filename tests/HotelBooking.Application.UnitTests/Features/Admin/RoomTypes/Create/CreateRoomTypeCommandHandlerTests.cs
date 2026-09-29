@@ -1,7 +1,8 @@
-using HotelBooking.Application.Features.Admin.RoomTypes.Create;
+﻿using HotelBooking.Application.Features.Admin.RoomTypes.Create;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.RoomTypes;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.RoomTypes.Create;
 
@@ -14,7 +15,7 @@ public class CreateRoomTypeCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_HappyPath_AddsRoomTypeAndReturnsDto()
     {
-        var sut = new CreateRoomTypeCommandHandler(_db);
+        var sut = new CreateRoomTypeCommandHandler(new RoomTypeRepository(_db));
 
         var result = await sut.Handle(
             new CreateRoomTypeCommand("Suite", "Large suite"),
@@ -32,7 +33,7 @@ public class CreateRoomTypeCommandHandlerTests : IDisposable
         _db.RoomTypes.Add(new RoomType { Name = "Suite" });
         _db.SaveChanges();
 
-        var sut = new CreateRoomTypeCommandHandler(_db);
+        var sut = new CreateRoomTypeCommandHandler(new RoomTypeRepository(_db));
 
         var result = await sut.Handle(
             new CreateRoomTypeCommand("SUITE", null),

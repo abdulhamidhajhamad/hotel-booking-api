@@ -1,8 +1,9 @@
-using HotelBooking.Application.Features.Reviews.Create;
+﻿using HotelBooking.Application.Features.Reviews.Create;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.Reviews;
 using Microsoft.Extensions.Time.Testing;
 
 namespace HotelBooking.Application.UnitTests.Features.Reviews.Create;
@@ -20,7 +21,7 @@ public class CreateReviewCommandHandlerTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private CreateReviewCommandHandler CreateSut() => new(_db, _currentUser, _time);
+    private CreateReviewCommandHandler CreateSut() => new(new ReviewRepository(_db), _currentUser, _time);
 
     private Booking SeedBooking(Guid ownerId, BookingStatus status, DateOnly checkOut)
     {
@@ -80,7 +81,7 @@ public class CreateReviewCommandHandlerTests : IDisposable
     public async Task Handle_WhenAnonymous_ReturnsUnauthorized()
     {
         var booking = SeedBooking(_userId, BookingStatus.Confirmed, Today.AddDays(-1));
-        var sut = new CreateReviewCommandHandler(_db, FakeCurrentUser.Anonymous(), _time);
+        var sut = new CreateReviewCommandHandler(new ReviewRepository(_db), FakeCurrentUser.Anonymous(), _time);
 
         var result = await sut.Handle(
             new CreateReviewCommand(booking.Id, 5, null), CancellationToken.None);

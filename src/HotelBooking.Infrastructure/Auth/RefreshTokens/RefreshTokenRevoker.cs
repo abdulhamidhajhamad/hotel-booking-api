@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using HotelBooking.Application.Abstractions;
+using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Application.Features.Auth.Abstractions;
 using HotelBooking.Infrastructure.Identity.Options;
 

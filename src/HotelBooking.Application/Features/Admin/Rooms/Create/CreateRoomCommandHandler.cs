@@ -1,17 +1,16 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Messaging;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.Rooms.Abstractions;
 using HotelBooking.Application.Features.Admin.Rooms.Common;
 using HotelBooking.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.Rooms.Create;
 
 public sealed class CreateRoomCommandHandler : ICommandHandler<CreateRoomCommand, RoomDetail>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IRoomRepository _rooms;
 
-    public CreateRoomCommandHandler(IApplicationDbContext db) => _db = db;
+    public CreateRoomCommandHandler(IRoomRepository rooms) => _rooms = rooms;
 
     public async Task<Result<RoomDetail>> Handle(
         CreateRoomCommand command,
@@ -19,19 +18,8 @@ public sealed class CreateRoomCommandHandler : ICommandHandler<CreateRoomCommand
     {
         var number = command.Number.Trim();
 
-        var lookup = await _db.Hotels
-            .Where(h => h.Id == command.HotelId)
-            .Select(h => new
-            {
-                HotelName = h.Name,
-                RoomType = _db.RoomTypes
-                    .Where(t => t.Id == command.RoomTypeId)
-                    .Select(t => new { t.Id, t.Name })
-                    .FirstOrDefault(),
-                DuplicateNumber = _db.Rooms
-                    .Any(r => r.HotelId == command.HotelId && r.Number == number),
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+        var lookup = await _rooms.GetCreateLookupAsync(
+            command.HotelId, command.RoomTypeId, number, cancellationToken);
 
         if (lookup is null)
             return RoomErrors.HotelNotFound(command.HotelId);
@@ -53,7 +41,7 @@ public sealed class CreateRoomCommandHandler : ICommandHandler<CreateRoomCommand
             IsActive = command.IsActive,
         };
 
-        await _db.Rooms.AddAsync(room, cancellationToken);
+        _rooms.Add(room);
 
         return new RoomDetail(
             room.Id,

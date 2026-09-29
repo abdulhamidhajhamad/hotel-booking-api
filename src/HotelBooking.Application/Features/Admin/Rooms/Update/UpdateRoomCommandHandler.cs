@@ -1,27 +1,21 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Messaging;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.Rooms.Abstractions;
 using HotelBooking.Application.Features.Admin.Rooms.Common;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.Rooms.Update;
 
 public sealed class UpdateRoomCommandHandler : ICommandHandler<UpdateRoomCommand, RoomDetail>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IRoomRepository _rooms;
 
-    public UpdateRoomCommandHandler(IApplicationDbContext db) => _db = db;
+    public UpdateRoomCommandHandler(IRoomRepository rooms) => _rooms = rooms;
 
     public async Task<Result<RoomDetail>> Handle(
         UpdateRoomCommand command,
         CancellationToken cancellationToken)
     {
-        var room = await _db.Rooms
-            .Include(r => r.Hotel)
-            .Include(r => r.RoomType)
-            .FirstOrDefaultAsync(
-                r => r.Id == command.Id && r.HotelId == command.HotelId,
-                cancellationToken);
+        var room = await _rooms.GetByIdWithRelationsAsync(command.Id, command.HotelId, cancellationToken);
 
         if (room is null)
             return RoomErrors.NotFound(command.Id);
@@ -30,8 +24,7 @@ public sealed class UpdateRoomCommandHandler : ICommandHandler<UpdateRoomCommand
 
         if (command.RoomTypeId.HasValue && command.RoomTypeId.Value != room.RoomTypeId)
         {
-            var newType = await _db.RoomTypes
-                .FirstOrDefaultAsync(t => t.Id == command.RoomTypeId.Value, cancellationToken);
+            var newType = await _rooms.GetRoomTypeAsync(command.RoomTypeId.Value, cancellationToken);
             if (newType is null)
                 return RoomErrors.RoomTypeNotFound(command.RoomTypeId.Value);
 
@@ -45,9 +38,8 @@ public sealed class UpdateRoomCommandHandler : ICommandHandler<UpdateRoomCommand
             var newNumber = command.Number.Trim();
             if (newNumber != room.Number)
             {
-                var duplicate = await _db.Rooms.AnyAsync(
-                    r => r.HotelId == room.HotelId && r.Id != room.Id && r.Number == newNumber,
-                    cancellationToken);
+                var duplicate = await _rooms.HasDuplicateNumberAsync(
+                    room.HotelId, room.Id, newNumber, cancellationToken);
                 if (duplicate)
                     return RoomErrors.DuplicateNumber(room.HotelId, newNumber);
                 room.Number = newNumber;
@@ -59,8 +51,7 @@ public sealed class UpdateRoomCommandHandler : ICommandHandler<UpdateRoomCommand
         if (command.PricePerNight.HasValue) room.PricePerNight = command.PricePerNight.Value;
         if (command.IsActive.HasValue) room.IsActive = command.IsActive.Value;
 
-        var numberOfImages = await _db.RoomImages
-            .CountAsync(i => i.RoomId == room.Id, cancellationToken);
+        var numberOfImages = await _rooms.CountImagesAsync(room.Id, cancellationToken);
 
         return new RoomDetail(
             room.Id,

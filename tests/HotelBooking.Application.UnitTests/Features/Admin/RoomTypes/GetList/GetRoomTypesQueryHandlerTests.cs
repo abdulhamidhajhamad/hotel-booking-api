@@ -1,7 +1,8 @@
-using HotelBooking.Application.Features.Admin.RoomTypes.GetList;
+﻿using HotelBooking.Application.Features.Admin.RoomTypes.GetList;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.RoomTypes;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.RoomTypes.GetList;
 
@@ -14,7 +15,7 @@ public class GetRoomTypesQueryHandlerTests : IDisposable
     [Fact]
     public async Task Handle_WhenEmpty_ReturnsEmptyList()
     {
-        var sut = new GetRoomTypesQueryHandler(_db);
+        var sut = new GetRoomTypesQueryHandler(new RoomTypeReader(_db));
 
         var result = await sut.Handle(new GetRoomTypesQuery(), CancellationToken.None);
 
@@ -31,7 +32,7 @@ public class GetRoomTypesQueryHandlerTests : IDisposable
             new RoomType { Name = "Standard" });
         _db.SaveChanges();
 
-        var sut = new GetRoomTypesQueryHandler(_db);
+        var sut = new GetRoomTypesQueryHandler(new RoomTypeReader(_db));
 
         var result = await sut.Handle(new GetRoomTypesQuery(), CancellationToken.None);
 

@@ -1,18 +1,17 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Messaging;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.Cities.Abstractions;
 using HotelBooking.Application.Features.Admin.Cities.Common;
 using HotelBooking.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.Cities.Create;
 
 public sealed class CreateCityCommandHandler
     : ICommandHandler<CreateCityCommand, CityDetail>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly ICityRepository _cities;
 
-    public CreateCityCommandHandler(IApplicationDbContext db) => _db = db;
+    public CreateCityCommandHandler(ICityRepository cities) => _cities = cities;
 
     public async Task<Result<CityDetail>> Handle(
         CreateCityCommand command,
@@ -23,8 +22,7 @@ public sealed class CreateCityCommandHandler
         var postalCode = command.PostalCode?.Trim();
         var timezone = command.Timezone.Trim();
 
-        var duplicate = await _db.Cities
-            .AnyAsync(c => c.Name == name && c.Country == country, cancellationToken);
+        var duplicate = await _cities.ExistsWithNameAndCountryAsync(name, country, null, cancellationToken);
 
         if (duplicate)
             return CityErrors.DuplicateNameCountry(name, country);
@@ -37,7 +35,7 @@ public sealed class CreateCityCommandHandler
             Timezone = timezone,
         };
 
-        await _db.Cities.AddAsync(city, cancellationToken);
+        _cities.Add(city);
 
         return new CityDetail(
             city.Id,

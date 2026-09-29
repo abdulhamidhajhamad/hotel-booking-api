@@ -1,9 +1,8 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Abstractions.Storage;
+﻿using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.RoomImages.Abstractions;
 using HotelBooking.Application.Features.Admin.RoomImages.Common;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace HotelBooking.Application.Features.Admin.RoomImages.Delete;
@@ -11,16 +10,16 @@ namespace HotelBooking.Application.Features.Admin.RoomImages.Delete;
 public sealed class DeleteRoomImageCommandHandler
     : ICommandHandler<DeleteRoomImageCommand>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IRoomImageRepository _images;
     private readonly IImageStorage _storage;
     private readonly ILogger<DeleteRoomImageCommandHandler> _logger;
 
     public DeleteRoomImageCommandHandler(
-        IApplicationDbContext db,
+        IRoomImageRepository images,
         IImageStorage storage,
         ILogger<DeleteRoomImageCommandHandler> logger)
     {
-        _db = db;
+        _images = images;
         _storage = storage;
         _logger = logger;
     }
@@ -29,16 +28,12 @@ public sealed class DeleteRoomImageCommandHandler
         DeleteRoomImageCommand command,
         CancellationToken cancellationToken)
     {
-        var image = await _db.RoomImages.FirstOrDefaultAsync(
-            i => i.Id == command.ImageId
-                 && i.RoomId == command.RoomId
-                 && i.Room.HotelId == command.HotelId,
-            cancellationToken);
+        var image = await _images.GetByIdAsync(command.ImageId, command.RoomId, command.HotelId, cancellationToken);
 
         if (image is null)
             return Result.Failure(RoomImageErrors.NotFound(command.ImageId));
 
-        _db.RoomImages.Remove(image);
+        _images.Remove(image);
 
         try
         {

@@ -1,23 +1,23 @@
-using HotelBooking.Application.Abstractions;
+﻿using HotelBooking.Application.Abstractions;
 using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
 using HotelBooking.Application.Features.Bookings.Common;
-using Microsoft.EntityFrameworkCore;
+using HotelBooking.Application.Features.Bookings.Invoice.Abstractions;
 
 namespace HotelBooking.Application.Features.Bookings.Invoice;
 
 public sealed class GetInvoiceQueryHandler : IQueryHandler<GetInvoiceQuery, InvoiceModel>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IInvoiceReader _reader;
     private readonly ICurrentUser _currentUser;
     private readonly InvoiceBuilder _invoiceBuilder;
 
     public GetInvoiceQueryHandler(
-        IApplicationDbContext db,
+        IInvoiceReader reader,
         ICurrentUser currentUser,
         InvoiceBuilder invoiceBuilder)
     {
-        _db = db;
+        _reader = reader;
         _currentUser = currentUser;
         _invoiceBuilder = invoiceBuilder;
     }
@@ -29,12 +29,7 @@ public sealed class GetInvoiceQueryHandler : IQueryHandler<GetInvoiceQuery, Invo
         if (_currentUser.Id is not { } userId)
             return Result<InvoiceModel>.Failure(BookingErrors.NotAuthenticated());
 
-        var ownerId = await _db.BookingGroups
-            .AsNoTracking()
-            .IgnoreQueryFilters()
-            .Where(g => g.Id == query.BookingGroupId)
-            .Select(g => (Guid?)g.UserId)
-            .FirstOrDefaultAsync(cancellationToken);
+        var ownerId = await _reader.GetOwnerIdAsync(query.BookingGroupId, cancellationToken);
 
         if (ownerId is null)
             return Result<InvoiceModel>.Failure(BookingErrors.BookingGroupNotFound(query.BookingGroupId));

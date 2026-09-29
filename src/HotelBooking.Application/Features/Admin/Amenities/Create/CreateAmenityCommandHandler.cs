@@ -1,30 +1,25 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Messaging;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.Amenities.Abstractions;
 using HotelBooking.Application.Features.Admin.Amenities.Common;
 using HotelBooking.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.Amenities.Create;
 
 public sealed class CreateAmenityCommandHandler
     : ICommandHandler<CreateAmenityCommand, AmenityDto>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IAmenityRepository _amenities;
 
-    public CreateAmenityCommandHandler(IApplicationDbContext db) => _db = db;
+    public CreateAmenityCommandHandler(IAmenityRepository amenities) => _amenities = amenities;
 
     public async Task<Result<AmenityDto>> Handle(
         CreateAmenityCommand command,
         CancellationToken cancellationToken)
     {
         var name = command.Name.Trim();
-        var normalized = name.ToLower();
 
-        var existingName = await _db.Amenities
-            .Where(a => a.Name.ToLower() == normalized)
-            .Select(a => a.Name)
-            .FirstOrDefaultAsync(cancellationToken);
+        var existingName = await _amenities.GetExistingNameAsync(name, null, cancellationToken);
 
         if (existingName is not null)
             return AmenityErrors.AlreadyExists(existingName);
@@ -35,7 +30,7 @@ public sealed class CreateAmenityCommandHandler
             Icon = string.IsNullOrWhiteSpace(command.Icon) ? null : command.Icon.Trim(),
         };
 
-        await _db.Amenities.AddAsync(amenity, cancellationToken);
+        _amenities.Add(amenity);
 
         return new AmenityDto(
             amenity.Id,

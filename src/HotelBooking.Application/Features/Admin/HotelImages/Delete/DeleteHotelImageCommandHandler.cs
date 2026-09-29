@@ -1,9 +1,8 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Abstractions.Storage;
+﻿using HotelBooking.Application.Abstractions.Storage;
 using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.HotelImages.Abstractions;
 using HotelBooking.Application.Features.Admin.HotelImages.Common;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace HotelBooking.Application.Features.Admin.HotelImages.Delete;
@@ -11,16 +10,16 @@ namespace HotelBooking.Application.Features.Admin.HotelImages.Delete;
 public sealed class DeleteHotelImageCommandHandler
     : ICommandHandler<DeleteHotelImageCommand>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IHotelImageRepository _images;
     private readonly IImageStorage _storage;
     private readonly ILogger<DeleteHotelImageCommandHandler> _logger;
 
     public DeleteHotelImageCommandHandler(
-        IApplicationDbContext db,
+        IHotelImageRepository images,
         IImageStorage storage,
         ILogger<DeleteHotelImageCommandHandler> logger)
     {
-        _db = db;
+        _images = images;
         _storage = storage;
         _logger = logger;
     }
@@ -29,23 +28,17 @@ public sealed class DeleteHotelImageCommandHandler
         DeleteHotelImageCommand command,
         CancellationToken cancellationToken)
     {
-        var image = await _db.HotelImages.FirstOrDefaultAsync(
-            i => i.Id == command.ImageId && i.HotelId == command.HotelId,
-            cancellationToken);
+        var image = await _images.GetByIdAsync(command.ImageId, command.HotelId, cancellationToken);
 
         if (image is null)
             return Result.Failure(HotelImageErrors.NotFound(command.ImageId));
 
         var wasPrimary = image.IsPrimary;
-        _db.HotelImages.Remove(image);
+        _images.Remove(image);
 
         if (wasPrimary)
         {
-            var next = await _db.HotelImages
-                .Where(i => i.HotelId == command.HotelId && i.Id != command.ImageId)
-                .OrderBy(i => i.CreatedAt)
-                .FirstOrDefaultAsync(cancellationToken);
-
+            var next = await _images.GetNextForPrimaryAsync(command.HotelId, command.ImageId, cancellationToken);
             if (next is not null) next.IsPrimary = true;
         }
 

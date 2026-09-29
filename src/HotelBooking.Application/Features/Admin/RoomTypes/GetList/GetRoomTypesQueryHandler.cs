@@ -1,33 +1,22 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Messaging;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.RoomTypes.Abstractions;
 using HotelBooking.Application.Features.Admin.RoomTypes.Common;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.RoomTypes.GetList;
 
 public sealed class GetRoomTypesQueryHandler
     : IQueryHandler<GetRoomTypesQuery, IReadOnlyList<RoomTypeDto>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IRoomTypeReader _roomTypes;
 
-    public GetRoomTypesQueryHandler(IApplicationDbContext db) => _db = db;
+    public GetRoomTypesQueryHandler(IRoomTypeReader roomTypes) => _roomTypes = roomTypes;
 
     public async Task<Result<IReadOnlyList<RoomTypeDto>>> Handle(
         GetRoomTypesQuery query,
         CancellationToken cancellationToken)
     {
-        var items = await _db.RoomTypes
-            .AsNoTracking()
-            .OrderBy(t => t.Name)
-            .Select(t => new RoomTypeDto(
-                t.Id,
-                t.Name,
-                t.Description,
-                t.Rooms.Count(r => !r.IsDeleted),
-                t.CreatedAt,
-                t.UpdatedAt))
-            .ToListAsync(cancellationToken);
+        var items = await _roomTypes.GetAllAsync(cancellationToken);
 
         return Result<IReadOnlyList<RoomTypeDto>>.Success(items);
     }
