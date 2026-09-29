@@ -14,13 +14,11 @@ namespace HotelBooking.Api.IntegrationTests.Infrastructure;
 
 public sealed class HotelBookingApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly MsSqlContainer _db = new MsSqlBuilder()
-        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+    private readonly MsSqlContainer _db = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
         .WithPassword("Your_strong_Passw0rd!")
         .Build();
 
-    private readonly RedisContainer _redis = new RedisBuilder()
-        .WithImage("redis:7-alpine")
+    private readonly RedisContainer _redis = new RedisBuilder("redis:7-alpine")
         .Build();
 
     public FakeEmailSender Emails => Services.GetRequiredService<FakeEmailSender>();
