@@ -26,6 +26,7 @@ using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage;
 using HotelBooking.Infrastructure.Storage.Options;
 using HotelBooking.Infrastructure.Bookings;
+using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Features.Bookings.Create.Abstractions;
 using HotelBooking.Infrastructure.Persistence.Repositories.CreateBooking;
 using HotelBooking.Application.Features.Bookings.Pay.Abstractions;
@@ -117,6 +118,8 @@ public static class DependencyInjection
         services.AddScoped<IEmailConfirmationRepository, EmailConfirmationRepository>();
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
 
         services.AddScoped<ICityImageRepository, CityImageRepository>();
         services.AddScoped<IHotelImageRepository, HotelImageRepository>();

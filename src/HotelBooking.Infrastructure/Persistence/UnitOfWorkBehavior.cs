@@ -1,8 +1,8 @@
-using HotelBooking.Application.Abstractions;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
 using Microsoft.EntityFrameworkCore;
 
-namespace HotelBooking.Application.Common.Messaging;
+namespace HotelBooking.Infrastructure.Persistence;
 
 public sealed class UnitOfWorkBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ICommandBase

@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using HotelBooking.Domain.Entities;
 
-namespace HotelBooking.Application.Abstractions;
+namespace HotelBooking.Infrastructure.Persistence;
 
 public interface IApplicationDbContext
 {
