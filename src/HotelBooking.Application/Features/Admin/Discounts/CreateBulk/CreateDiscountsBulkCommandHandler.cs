@@ -1,18 +1,17 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Messaging;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.Discounts.Abstractions;
 using HotelBooking.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.Discounts.CreateBulk;
 
 public sealed class CreateDiscountsBulkCommandHandler
     : ICommandHandler<CreateDiscountsBulkCommand, BulkCreateResponse>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IDiscountRepository _discounts;
     private readonly BulkDiscountItemValidator _itemValidator = new();
 
-    public CreateDiscountsBulkCommandHandler(IApplicationDbContext db) => _db = db;
+    public CreateDiscountsBulkCommandHandler(IDiscountRepository discounts) => _discounts = discounts;
 
     public async Task<Result<BulkCreateResponse>> Handle(
         CreateDiscountsBulkCommand command,
@@ -32,10 +31,7 @@ public sealed class CreateDiscountsBulkCommandHandler
 
         var roomIds = command.Items.Select(x => x.RoomId).Distinct().ToArray();
 
-        var existingRoomIds = await _db.Rooms
-            .Where(r => roomIds.Contains(r.Id))
-            .Select(r => r.Id)
-            .ToListAsync(cancellationToken);
+        var existingRoomIds = await _discounts.GetExistingRoomIdsAsync(roomIds, cancellationToken);
 
         var existingSet = existingRoomIds.ToHashSet();
 
@@ -64,7 +60,7 @@ public sealed class CreateDiscountsBulkCommandHandler
                 EndUtc = DateTime.SpecifyKind(item.EndUtc, DateTimeKind.Utc),
                 Title = string.IsNullOrWhiteSpace(item.Title) ? null : item.Title!.Trim(),
             };
-            await _db.Discounts.AddAsync(discount, cancellationToken);
+            _discounts.Add(discount);
             created.Add(new BulkCreatedItem(i, discount.Id));
         }
 

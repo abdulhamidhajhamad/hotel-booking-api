@@ -1,28 +1,23 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Messaging;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.Discounts.Abstractions;
 using HotelBooking.Application.Features.Admin.Discounts.Common;
 using HotelBooking.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.Discounts.Create;
 
 public sealed class CreateDiscountCommandHandler
     : ICommandHandler<CreateDiscountCommand, DiscountDto>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IDiscountRepository _discounts;
 
-    public CreateDiscountCommandHandler(IApplicationDbContext db) => _db = db;
+    public CreateDiscountCommandHandler(IDiscountRepository discounts) => _discounts = discounts;
 
     public async Task<Result<DiscountDto>> Handle(
         CreateDiscountCommand command,
         CancellationToken cancellationToken)
     {
-        var room = await _db.Rooms
-            .AsNoTracking()
-            .Where(r => r.Id == command.RoomId)
-            .Select(r => new { r.Id, r.Number, r.HotelId, HotelName = r.Hotel.Name })
-            .FirstOrDefaultAsync(cancellationToken);
+        var room = await _discounts.GetRoomSummaryAsync(command.RoomId, cancellationToken);
 
         if (room is null)
             return DiscountErrors.RoomNotFound(command.RoomId);
@@ -36,7 +31,7 @@ public sealed class CreateDiscountCommandHandler
             Title = string.IsNullOrWhiteSpace(command.Title) ? null : command.Title!.Trim(),
         };
 
-        await _db.Discounts.AddAsync(discount, cancellationToken);
+        _discounts.Add(discount);
 
         var now = DateTime.UtcNow;
 
