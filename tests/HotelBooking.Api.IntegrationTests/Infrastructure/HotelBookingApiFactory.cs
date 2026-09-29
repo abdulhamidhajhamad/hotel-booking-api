@@ -1,4 +1,4 @@
-using HotelBooking.Api.IntegrationTests.Features.Outbox;
+﻿using HotelBooking.Api.IntegrationTests.Features.Outbox;
 using HotelBooking.Application.Abstractions.Email;
 using HotelBooking.Application.Abstractions.Outbox;
 using HotelBooking.Infrastructure.Outbox;
@@ -70,6 +70,10 @@ public sealed class HotelBookingApiFactory : WebApplicationFactory<Program>, IAs
             services.Remove(senderDescriptor);
             services.AddSingleton<FakeEmailSender>();
             services.AddSingleton<IEmailSender>(sp => sp.GetRequiredService<FakeEmailSender>());
+
+            var paymentGatewayDescriptor = services.Single(d => d.ServiceType == typeof(HotelBooking.Application.Abstractions.Payments.IPaymentGateway));
+            services.Remove(paymentGatewayDescriptor);
+            services.AddScoped<HotelBooking.Application.Abstractions.Payments.IPaymentGateway, AlwaysSucceedsPaymentGateway>();
 
             var outboxOptionsDescriptor = services.Single(d => d.ServiceType == typeof(IOptions<OutboxOptions>));
             services.Remove(outboxOptionsDescriptor);
