@@ -5,6 +5,7 @@ using HotelBooking.Application.Common.Results;
 using HotelBooking.Application.Features.Admin.HotelImages.Common;
 using HotelBooking.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace HotelBooking.Application.Features.Admin.HotelImages.Upload;
 
@@ -13,13 +14,16 @@ public sealed class UploadHotelImagesCommandHandler
 {
     private readonly IApplicationDbContext _db;
     private readonly IImageStorage _storage;
+    private readonly ILogger<UploadHotelImagesCommandHandler> _logger;
 
     public UploadHotelImagesCommandHandler(
         IApplicationDbContext db,
-        IImageStorage storage)
+        IImageStorage storage,
+        ILogger<UploadHotelImagesCommandHandler> logger)
     {
         _db = db;
         _storage = storage;
+        _logger = logger;
     }
 
     public async Task<Result<IReadOnlyList<HotelImageDto>>> Handle(
@@ -35,6 +39,7 @@ public sealed class UploadHotelImagesCommandHandler
             .AnyAsync(i => i.HotelId == command.HotelId && i.IsPrimary, cancellationToken);
 
         var items = new List<HotelImageDto>();
+        var uploadedPublicIds = new List<string>();
         var isFirstInBatch = true;
 
         foreach (var file in command.Files)
@@ -44,6 +49,8 @@ public sealed class UploadHotelImagesCommandHandler
                 file.ContentType,
                 $"hotels/{command.HotelId}",
                 cancellationToken);
+
+            uploadedPublicIds.Add(stored.PublicId);
 
             var makePrimary = !hasPrimary && isFirstInBatch;
 
@@ -55,13 +62,32 @@ public sealed class UploadHotelImagesCommandHandler
                 IsPrimary = makePrimary,
             };
             await _db.HotelImages.AddAsync(image, cancellationToken);
-
             if (makePrimary) hasPrimary = true;
             isFirstInBatch = false;
 
             items.Add(new HotelImageDto(image.Id, image.Url, image.IsPrimary));
         }
-
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            foreach (var publicId in uploadedPublicIds)
+            {
+                try
+                {
+                    await _storage.DeleteAsync(publicId, CancellationToken.None);
+                }
+                catch (Exception cleanupEx)
+                {
+                    _logger.LogWarning(cleanupEx,
+                        "Failed to delete orphaned upload {PublicId} after a failed image save.",
+                        publicId);
+                }
+            }
+            throw;
+        }
         return Result<IReadOnlyList<HotelImageDto>>.Success(items);
     }
 }

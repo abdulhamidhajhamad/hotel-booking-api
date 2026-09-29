@@ -6,4 +6,4 @@ namespace HotelBooking.Application.Features.Admin.CityImages.Upload;
 
 public sealed record UploadCityImagesCommand(
     Guid CityId,
-    IReadOnlyList<UploadImageFile> Files) : ICommand<IReadOnlyList<CityImageDto>>;
+    IReadOnlyList<UploadImageFile> Files) : ICommand<IReadOnlyList<CityImageDto>>, IManagesOwnTransactions;

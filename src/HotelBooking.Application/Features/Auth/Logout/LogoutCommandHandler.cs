@@ -34,7 +34,7 @@ public sealed class LogoutCommandHandler : ICommandHandler<LogoutCommand>
         await _revoker.RevokeByJtiAsync(
             _currentUser.Id.Value,
             _currentUser.Jti,
-            cancellationToken);
+            cancellationToken); 
 
         return Result.Success();
     }
