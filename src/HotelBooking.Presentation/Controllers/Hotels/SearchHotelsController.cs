@@ -11,6 +11,7 @@ namespace HotelBooking.Presentation.Controllers.Hotels;
 [ApiController]
 [AllowAnonymous]
 [Route("api/v1/hotels")]
+[Tags("Hotels")]
 public sealed class SearchHotelsController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

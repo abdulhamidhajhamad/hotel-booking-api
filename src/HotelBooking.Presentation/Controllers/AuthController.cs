@@ -16,6 +16,7 @@ namespace HotelBooking.Presentation.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
+[Tags("Auth")]
 public sealed class AuthController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

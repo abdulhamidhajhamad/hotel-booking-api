@@ -11,6 +11,7 @@ namespace HotelBooking.Presentation.Controllers.Amenities;
 [ApiController]
 [AllowAnonymous]
 [Route("api/v1/amenities")]
+[Tags("Amenities")]
 public sealed class GetAmenitiesController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

@@ -190,6 +190,7 @@ try
     {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         db.Database.Migrate();
+        await HotelBooking.Presentation.Common.AdminSeeder.SeedAsync(scope.ServiceProvider);
     }
 
     app.UseSerilogRequestLogging();

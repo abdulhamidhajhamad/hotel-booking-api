@@ -12,6 +12,7 @@ namespace HotelBooking.Presentation.Controllers.Reviews;
 [ApiController]
 [AllowAnonymous]
 [Route("api/v1/hotels/{hotelId:guid}/reviews")]
+[Tags("Reviews")]
 public sealed class HotelReviewsController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

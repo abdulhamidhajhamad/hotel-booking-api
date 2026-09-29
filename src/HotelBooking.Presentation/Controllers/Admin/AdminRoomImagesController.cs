@@ -13,6 +13,7 @@ namespace HotelBooking.Presentation.Controllers.Admin;
 [ApiController]
 [Authorize(Roles = "Admin")]
 [Route("api/v1/admin/hotels/{hotelId:guid}/rooms/{roomId:guid}/images")]
+[Tags("Admin - Rooms")]
 public sealed class AdminRoomImagesController : ControllerBase
 {
     private const long MaxFileSizeBytes = 5 * 1024 * 1024;

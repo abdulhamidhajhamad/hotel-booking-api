@@ -11,6 +11,7 @@ namespace HotelBooking.Presentation.Controllers.Reviews;
 [ApiController]
 [Authorize]
 [Route("api/v1/reviews")]
+[Tags("Reviews")]
 public sealed class ReviewsController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
