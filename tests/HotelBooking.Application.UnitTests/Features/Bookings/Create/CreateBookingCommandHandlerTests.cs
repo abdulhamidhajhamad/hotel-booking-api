@@ -1,8 +1,9 @@
-using HotelBooking.Application.Features.Bookings.Create;
+﻿using HotelBooking.Application.Features.Bookings.Create;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories.CreateBooking;
 
 namespace HotelBooking.Application.UnitTests.Features.Bookings.Create;
 
@@ -13,7 +14,7 @@ public class CreateBookingCommandHandlerTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private CreateBookingCommandHandler CreateSut() => new(_db, _currentUser);
+    private CreateBookingCommandHandler CreateSut() => new(new CreateBookingRepository(_db), _currentUser);
 
     private Guid SeedRoom(decimal pricePerNight = 100m, bool isActive = true)
     {
@@ -109,7 +110,7 @@ public class CreateBookingCommandHandlerTests : IDisposable
     public async Task Handle_WhenNotAuthenticated_ReturnsUnauthorized()
     {
         var roomId = SeedRoom();
-        var sut = new CreateBookingCommandHandler(_db, FakeCurrentUser.Anonymous());
+        var sut = new CreateBookingCommandHandler(new CreateBookingRepository(_db), FakeCurrentUser.Anonymous());
 
         var result = await sut.Handle(CommandFor(roomId), CancellationToken.None);
 

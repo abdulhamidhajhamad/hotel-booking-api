@@ -1,23 +1,23 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using HotelBooking.Application.Abstractions;
 using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
 using HotelBooking.Application.Features.Bookings.Common;
+using HotelBooking.Application.Features.Bookings.Create.Abstractions;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Bookings.Create;
 
 public sealed class CreateBookingCommandHandler : ICommandHandler<CreateBookingCommand, CreateBookingResult>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly ICreateBookingRepository _bookings;
     private readonly ICurrentUser _currentUser;
 
-    public CreateBookingCommandHandler(IApplicationDbContext db, ICurrentUser currentUser)
+    public CreateBookingCommandHandler(ICreateBookingRepository bookings, ICurrentUser currentUser)
     {
-        _db = db;
+        _bookings = bookings;
         _currentUser = currentUser;
     }
 
@@ -30,29 +30,14 @@ public sealed class CreateBookingCommandHandler : ICommandHandler<CreateBookingC
 
         var requestHash = ComputeRequestHash(command, userId);
 
-        var existing = await _db.IdempotencyRecords
-            .FirstOrDefaultAsync(r => r.Key == command.IdempotencyKey, cancellationToken);
+        var existing = await _bookings.GetIdempotencyRecordAsync(command.IdempotencyKey, cancellationToken);
 
         if (existing is not null)
             return await ReplayAsync(existing, requestHash, cancellationToken);
 
-        var now = DateTime.UtcNow;
         var roomIds = command.Rooms.Select(r => r.RoomId).Distinct().ToList();
 
-        var pricingByRoom = await _db.Rooms
-            .Where(r => roomIds.Contains(r.Id))
-            .Select(r => new RoomPricing(
-                r.Id,
-                r.IsActive,
-                r.AdultsCapacity,
-                r.ChildrenCapacity,
-                r.PricePerNight,
-                r.Discounts
-                    .Where(d => d.StartUtc <= now && d.EndUtc >= now)
-                    .OrderByDescending(d => d.Percentage)
-                    .Select(d => (decimal?)d.Percentage)
-                    .FirstOrDefault()))
-            .ToDictionaryAsync(r => r.RoomId, cancellationToken);
+        var pricingByRoom = await _bookings.GetRoomPricingAsync(roomIds, cancellationToken);
 
         foreach (var item in command.Rooms)
         {
@@ -69,12 +54,7 @@ public sealed class CreateBookingCommandHandler : ICommandHandler<CreateBookingC
             for (var date = item.CheckInDate; date < item.CheckOutDate; date = date.AddDays(1))
                 requestedSlots.Add((item.RoomId, date));
 
-        var takenSlots = (await _db.RoomAvailability
-            .Where(a => roomIds.Contains(a.RoomId))
-            .Select(a => new { a.RoomId, a.Date })
-            .ToListAsync(cancellationToken))
-            .Select(a => (a.RoomId, a.Date))
-            .ToHashSet();
+        var takenSlots = (await _bookings.GetTakenSlotsAsync(roomIds, cancellationToken)).ToHashSet();
 
         if (requestedSlots.Any(takenSlots.Contains))
             return Result<CreateBookingResult>.Failure(BookingErrors.RoomNotAvailable());
@@ -133,17 +113,11 @@ public sealed class CreateBookingCommandHandler : ICommandHandler<CreateBookingC
             CompletedAt = DateTimeOffset.UtcNow,
         };
 
-        _db.BookingGroups.Add(group);
-        _db.IdempotencyRecords.Add(record);
+        var persisted = await _bookings.TryPersistBookingAsync(group, record, cancellationToken);
 
-        try
+        if (!persisted)
         {
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException)
-        {
-            var raced = await _db.IdempotencyRecords
-                .FirstOrDefaultAsync(r => r.Key == command.IdempotencyKey, cancellationToken);
+            var raced = await _bookings.GetIdempotencyRecordAsync(command.IdempotencyKey, cancellationToken);
 
             return raced is not null
                 ? await ReplayAsync(raced, requestHash, cancellationToken)
@@ -168,11 +142,7 @@ public sealed class CreateBookingCommandHandler : ICommandHandler<CreateBookingC
         if (record.Status != IdempotencyStatus.Completed || record.BookingGroupId is not { } bookingGroupId)
             return Result<CreateBookingResult>.Failure(BookingErrors.RequestInProgress());
 
-        var snapshot = await _db.BookingGroups
-            .AsNoTracking()
-            .Where(g => g.Id == bookingGroupId)
-            .Select(g => new { g.Id, g.ConfirmationNumber, g.TotalPrice, g.CreatedAt })
-            .FirstOrDefaultAsync(cancellationToken);
+        var snapshot = await _bookings.GetBookingGroupSnapshotAsync(bookingGroupId, cancellationToken);
 
         if (snapshot is null)
             return Result<CreateBookingResult>.Failure(BookingErrors.RequestInProgress());
@@ -204,12 +174,4 @@ public sealed class CreateBookingCommandHandler : ICommandHandler<CreateBookingC
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString()));
         return Convert.ToHexString(hash);
     }
-
-    private sealed record RoomPricing(
-        Guid RoomId,
-        bool IsActive,
-        int AdultsCapacity,
-        int ChildrenCapacity,
-        decimal PricePerNight,
-        decimal? DiscountPercentage);
 }
