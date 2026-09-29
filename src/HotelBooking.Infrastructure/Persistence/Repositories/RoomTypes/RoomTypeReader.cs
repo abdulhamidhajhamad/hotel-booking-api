@@ -2,7 +2,7 @@
 using HotelBooking.Application.Features.Admin.RoomTypes.Common;
 using Microsoft.EntityFrameworkCore;
 
-namespace HotelBooking.Infrastructure.Persistence.Repositories;
+namespace HotelBooking.Infrastructure.Persistence.Repositories.RoomTypes;
 
 public sealed class RoomTypeReader : IRoomTypeReader
 {

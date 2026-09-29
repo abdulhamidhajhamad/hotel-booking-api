@@ -2,7 +2,7 @@
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
-using HotelBooking.Infrastructure.Persistence.Repositories;
+using HotelBooking.Infrastructure.Persistence.Repositories.Amenities;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.Amenities.Update;
 

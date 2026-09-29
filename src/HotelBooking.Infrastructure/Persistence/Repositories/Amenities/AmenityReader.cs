@@ -2,7 +2,7 @@
 using HotelBooking.Application.Features.Admin.Amenities.Common;
 using Microsoft.EntityFrameworkCore;
 
-namespace HotelBooking.Infrastructure.Persistence.Repositories;
+namespace HotelBooking.Infrastructure.Persistence.Repositories.Amenities;
 
 public sealed class AmenityReader : IAmenityReader
 {

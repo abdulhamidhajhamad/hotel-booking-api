@@ -2,7 +2,7 @@
 using HotelBooking.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace HotelBooking.Infrastructure.Persistence.Repositories;
+namespace HotelBooking.Infrastructure.Persistence.Repositories.Amenities;
 
 public sealed class AmenityRepository : IAmenityRepository
 {

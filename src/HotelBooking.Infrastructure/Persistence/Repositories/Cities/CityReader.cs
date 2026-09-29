@@ -4,7 +4,7 @@ using HotelBooking.Application.Features.Admin.Cities.Common;
 using HotelBooking.Application.Features.Admin.Cities.GetList;
 using Microsoft.EntityFrameworkCore;
 
-namespace HotelBooking.Infrastructure.Persistence.Repositories;
+namespace HotelBooking.Infrastructure.Persistence.Repositories.Cities;
 
 public sealed class CityReader : ICityReader
 {

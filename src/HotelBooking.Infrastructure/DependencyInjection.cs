@@ -28,7 +28,9 @@ using HotelBooking.Infrastructure.Storage.Options;
 using HotelBooking.Infrastructure.Bookings;
 using HotelBooking.Application.Features.Admin.RoomTypes.Abstractions;
 using HotelBooking.Application.Features.Admin.Cities.Abstractions;
-using HotelBooking.Infrastructure.Persistence.Repositories;
+using HotelBooking.Infrastructure.Persistence.Repositories.Amenities;
+using HotelBooking.Infrastructure.Persistence.Repositories.Cities;
+using HotelBooking.Infrastructure.Persistence.Repositories.RoomTypes;
 using HotelBooking.Application.Features.Admin.Amenities.Abstractions;
 namespace HotelBooking.Infrastructure;
 

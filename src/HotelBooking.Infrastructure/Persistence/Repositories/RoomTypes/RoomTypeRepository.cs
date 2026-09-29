@@ -2,7 +2,7 @@
 using HotelBooking.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace HotelBooking.Infrastructure.Persistence.Repositories;
+namespace HotelBooking.Infrastructure.Persistence.Repositories.RoomTypes;
 
 public sealed class RoomTypeRepository : IRoomTypeRepository
 {
