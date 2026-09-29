@@ -1,7 +1,8 @@
-using HotelBooking.Application.Features.Admin.RoomTypes.Update;
+﻿using HotelBooking.Application.Features.Admin.RoomTypes.Update;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.RoomTypes.Update;
 
@@ -14,7 +15,7 @@ public class UpdateRoomTypeCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_WhenNotFound_ReturnsNotFound()
     {
-        var sut = new UpdateRoomTypeCommandHandler(_db);
+        var sut = new UpdateRoomTypeCommandHandler(new RoomTypeRepository(_db));
 
         var result = await sut.Handle(
             new UpdateRoomTypeCommand(Guid.NewGuid(), Name: "X"),
@@ -32,7 +33,7 @@ public class UpdateRoomTypeCommandHandlerTests : IDisposable
         _db.RoomTypes.Add(target);
         _db.SaveChanges();
 
-        var sut = new UpdateRoomTypeCommandHandler(_db);
+        var sut = new UpdateRoomTypeCommandHandler(new RoomTypeRepository(_db));
 
         var result = await sut.Handle(
             new UpdateRoomTypeCommand(target.Id, Name: "suite"),

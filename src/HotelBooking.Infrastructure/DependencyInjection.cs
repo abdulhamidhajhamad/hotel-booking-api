@@ -26,6 +26,7 @@ using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Infrastructure.Storage;
 using HotelBooking.Infrastructure.Storage.Options;
 using HotelBooking.Infrastructure.Bookings;
+using HotelBooking.Application.Features.Admin.RoomTypes.Abstractions;
 using HotelBooking.Application.Features.Admin.Cities.Abstractions;
 using HotelBooking.Infrastructure.Persistence.Repositories;
 using HotelBooking.Application.Features.Admin.Amenities.Abstractions;
@@ -63,6 +64,9 @@ public static class DependencyInjection
                 .AddInterceptors(sp.GetRequiredService<OutboxSignalInterceptor>()));
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped<IRoomTypeRepository, RoomTypeRepository>();
+        services.AddScoped<IRoomTypeReader, RoomTypeReader>();
 
         services.AddScoped<ICityRepository, CityRepository>();
         services.AddScoped<ICityReader, CityReader>();

@@ -1,7 +1,8 @@
-using HotelBooking.Application.Features.Admin.RoomTypes.Delete;
+﻿using HotelBooking.Application.Features.Admin.RoomTypes.Delete;
 using HotelBooking.Application.UnitTests.Common.Fakes;
 using HotelBooking.Domain.Entities;
 using HotelBooking.Infrastructure.Persistence;
+using HotelBooking.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.UnitTests.Features.Admin.RoomTypes.Delete;
@@ -15,7 +16,7 @@ public class DeleteRoomTypeCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_WhenNotFound_ReturnsNotFound()
     {
-        var sut = new DeleteRoomTypeCommandHandler(_db);
+        var sut = new DeleteRoomTypeCommandHandler(new RoomTypeRepository(_db));
 
         var result = await sut.Handle(
             new DeleteRoomTypeCommand(Guid.NewGuid()),
@@ -58,7 +59,7 @@ public class DeleteRoomTypeCommandHandlerTests : IDisposable
         });
         _db.SaveChanges();
 
-        var sut = new DeleteRoomTypeCommandHandler(_db);
+        var sut = new DeleteRoomTypeCommandHandler(new RoomTypeRepository(_db));
 
         var result = await sut.Handle(
             new DeleteRoomTypeCommand(roomType.Id),
@@ -75,7 +76,7 @@ public class DeleteRoomTypeCommandHandlerTests : IDisposable
         _db.RoomTypes.Add(roomType);
         _db.SaveChanges();
 
-        var sut = new DeleteRoomTypeCommandHandler(_db);
+        var sut = new DeleteRoomTypeCommandHandler(new RoomTypeRepository(_db));
 
         var result = await sut.Handle(
             new DeleteRoomTypeCommand(roomType.Id),

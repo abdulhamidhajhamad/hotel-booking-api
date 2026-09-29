@@ -1,24 +1,22 @@
-using HotelBooking.Application.Abstractions;
-using HotelBooking.Application.Common.Messaging;
+﻿using HotelBooking.Application.Common.Messaging;
 using HotelBooking.Application.Common.Results;
+using HotelBooking.Application.Features.Admin.RoomTypes.Abstractions;
 using HotelBooking.Application.Features.Admin.RoomTypes.Common;
-using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Application.Features.Admin.RoomTypes.Update;
 
 public sealed class UpdateRoomTypeCommandHandler
     : ICommandHandler<UpdateRoomTypeCommand, RoomTypeDto>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IRoomTypeRepository _roomTypes;
 
-    public UpdateRoomTypeCommandHandler(IApplicationDbContext db) => _db = db;
+    public UpdateRoomTypeCommandHandler(IRoomTypeRepository roomTypes) => _roomTypes = roomTypes;
 
     public async Task<Result<RoomTypeDto>> Handle(
         UpdateRoomTypeCommand command,
         CancellationToken cancellationToken)
     {
-        var roomType = await _db.RoomTypes
-            .FirstOrDefaultAsync(t => t.Id == command.Id, cancellationToken);
+        var roomType = await _roomTypes.GetByIdAsync(command.Id, cancellationToken);
 
         if (roomType is null)
             return RoomTypeErrors.NotFound(command.Id);
@@ -28,11 +26,7 @@ public sealed class UpdateRoomTypeCommandHandler
             var newName = command.Name.Trim();
             if (!string.Equals(newName, roomType.Name, StringComparison.OrdinalIgnoreCase))
             {
-                var normalized = newName.ToLower();
-                var conflictName = await _db.RoomTypes
-                    .Where(t => t.Id != command.Id && t.Name.ToLower() == normalized)
-                    .Select(t => t.Name)
-                    .FirstOrDefaultAsync(cancellationToken);
+                var conflictName = await _roomTypes.GetExistingNameAsync(newName, command.Id, cancellationToken);
 
                 if (conflictName is not null)
                     return RoomTypeErrors.AlreadyExists(conflictName);
@@ -46,8 +40,7 @@ public sealed class UpdateRoomTypeCommandHandler
                 ? null
                 : command.Description.Trim();
 
-        var numberOfRooms = await _db.Rooms
-            .CountAsync(r => r.RoomTypeId == roomType.Id, cancellationToken);
+        var numberOfRooms = await _roomTypes.CountRoomsAsync(roomType.Id, cancellationToken);
 
         return new RoomTypeDto(
             roomType.Id,
