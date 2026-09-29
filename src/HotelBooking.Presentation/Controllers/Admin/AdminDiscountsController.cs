@@ -16,6 +16,7 @@ namespace HotelBooking.Presentation.Controllers.Admin;
 [ApiController]
 [Authorize(Roles = "Admin")]
 [Route("api/v1/admin/discounts")]
+[Tags("Admin - Discounts")]
 public sealed class AdminDiscountsController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

@@ -10,6 +10,7 @@ namespace HotelBooking.Presentation.Controllers.Hotels;
 [ApiController]
 [AllowAnonymous]
 [Route("api/v1/hotels")]
+[Tags("Hotels")]
 public sealed class GetFeaturedDealsController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

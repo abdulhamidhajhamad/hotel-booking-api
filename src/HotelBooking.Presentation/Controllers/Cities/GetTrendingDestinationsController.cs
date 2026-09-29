@@ -10,6 +10,7 @@ namespace HotelBooking.Presentation.Controllers.Cities;
 [ApiController]
 [AllowAnonymous]
 [Route("api/v1/cities")]
+[Tags("Cities")]
 public sealed class GetTrendingDestinationsController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

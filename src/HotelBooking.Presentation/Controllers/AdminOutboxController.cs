@@ -12,6 +12,7 @@ namespace HotelBooking.Presentation.Controllers;
 [ApiController]
 [Authorize(Roles = "Admin")]
 [Route("api/v1/admin/outbox")]
+[Tags("Admin - Outbox")]
 public sealed class AdminOutboxController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

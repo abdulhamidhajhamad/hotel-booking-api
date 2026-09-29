@@ -11,6 +11,7 @@ namespace HotelBooking.Presentation.Controllers.Bookings;
 [ApiController]
 [Authorize]
 [Route("api/v1/bookings/{bookingGroupId:guid}/invoice")]
+[Tags("Bookings")]
 public sealed class InvoiceController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
