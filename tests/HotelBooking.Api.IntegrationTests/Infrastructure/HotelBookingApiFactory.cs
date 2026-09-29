@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 using Testcontainers.MsSql;
 using Testcontainers.Redis;
 using Microsoft.AspNetCore.TestHost;
-
+using HotelBooking.Infrastructure.Bookings;
 namespace HotelBooking.Api.IntegrationTests.Infrastructure;
 
 public sealed class HotelBookingApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
@@ -81,7 +81,12 @@ public sealed class HotelBookingApiFactory : WebApplicationFactory<Program>, IAs
                 BackoffBaseSeconds = 1,
                 BackoffMaxSeconds = 2,
             }));
-
+            var sweeperOptionsDescriptor = services.Single(d => d.ServiceType == typeof(IOptions<ExpiredHoldSweeperOptions>));
+            services.Remove(sweeperOptionsDescriptor);
+            services.AddSingleton<IOptions<ExpiredHoldSweeperOptions>>(Options.Create(new ExpiredHoldSweeperOptions
+            {
+                SweepIntervalSeconds = 1,
+            }));
             services.AddSingleton<IOutboxHandler<DeadLetterTestEvent>, ThrowingDeadLetterHandler>();
 
             var registryDescriptor = services.Single(d => d.ServiceType == typeof(OutboxEventTypeRegistry));
